@@ -1,7 +1,7 @@
 import Order from "../models/orderModel.js";
-import Cart from "../models/cartModel.js"; // ✅ import Cart to clear it
+import Cart from "../models/cartModel.js";
+import { sendOrderNotification } from "../utils/orderMail.js"; // ← add this
 
-// Create order
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -11,7 +11,6 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
-    // Ensure product names are strings
     const orderItems = cartItems.map(item => ({
       productId: item.product?._id || item.productId,
       name: typeof item.name === "string" ? item.name : item.product?.name || "Unnamed Product",
@@ -29,13 +28,16 @@ export const createOrder = async (req, res) => {
       shippingCharge,
       paymentMethod: paymentMethod || "COD",
       status: "Processing",
-      createdAt: new Date(), // ✅ timestamp
+      createdAt: new Date(),
     });
 
     await newOrder.save();
 
-    // ✅ Clear user's cart in backend
+    // Clear cart
     await Cart.findOneAndUpdate({ user: userId }, { items: [] });
+
+    // 🔔 SEND EMAIL TO ADMIN
+    sendOrderNotification(newOrder); // **Don’t await — avoid slowing API**
 
     res.status(201).json({ message: "Order created successfully", order: newOrder });
   } catch (err) {

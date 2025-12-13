@@ -8,6 +8,8 @@ import http from "http";
 import { Server } from "socket.io";
 import connectDB from "./config/db.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+import contactRoutes from "./routes/contactRoutes.js";
+import offerRoutes from "./routes/offerRoutes.js";
 
 // ✅ Load environment variables FIRST
 dotenv.config();
@@ -30,29 +32,29 @@ import categoryRoutes from "./routes/categoryRoutes.js"; // ✅ Customer Categor
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Define allowed origins for both admin & customer
+// ✅ Allowed origins for frontend & admin panel
 const allowedOrigins = [
-  "http://localhost:5173", // Customer Frontend
+  "http://localhost:5173", // Customer frontend local
   "http://localhost:5174",
-  "https://website-tjd8-3womia9iv-poojakamatchis-projects.vercel.app" // Admin Panel
+    "https://vite-project-awha.onrender.com/", // Admin frontend local
+  "https://vite-project-awha.onrender.com", // Customer frontend deployed
+  "https://website-tjd8-3womia9iv-poojakamatchis-projects.vercel.app" // Admin panel deployed
 ];
 
-// ✅ CORS setup (for cross-origin requests)
+// ✅ CORS setup
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn(`🚫 CORS blocked: ${origin}`);
-        callback(new Error("CORS policy blocked this origin"));
-      }
+      if (!origin) return callback(null, true); // Allow server-to-server requests, Postman, etc.
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      console.warn(`🚫 CORS blocked: ${origin}`);
+      callback(new Error("CORS policy blocked this origin"));
     },
-    credentials: true,
+    credentials: true, // allow cookies and credentials
   })
 );
 
-// ✅ Socket.IO setup (for real-time updates)
+// ✅ Socket.IO setup with same CORS policy
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -66,11 +68,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ✅ Serve static uploads folder (for images)
+// ✅ Serve static uploads folder
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ Root route (check API is live)
+// ✅ Root route to test server
 app.get("/", (req, res) => {
   res.send("✅ API is running successfully...");
 });
@@ -81,21 +83,23 @@ app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api", contactRoutes);
+app.use("/api/offers", offerRoutes);
 
-// 🟢 CHANGED HERE — this allows /api/auth/admin/login
+// ✅ Admin routes
 app.use("/api/auth", adminRoutes);
-
 app.use("/api/auth/admin/products", adminProductRoutes);
 app.use("/api/auth/admin/category", adminCategoryRoutes);
 
-app.use("/api/categories", categoryRoutes); // ✅ Customer routes
+// ✅ Customer routes
+app.use("/api/categories", categoryRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 
-// ✅ Error Handling
+// ✅ Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
 
-// ✅ Socket Events
+// ✅ Socket.IO events
 io.on("connection", (socket) => {
   console.log("🟢 New client connected:", socket.id);
   socket.on("disconnect", () => {

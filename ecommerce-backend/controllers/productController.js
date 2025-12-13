@@ -5,12 +5,14 @@ import mongoose from "mongoose";
 export const getProducts = async (req, res) => {
   try {
     const products = await Product.find().populate("category", "name");
+
     const formatted = products.map((p) => ({
       ...p._doc,
       image: p.image?.startsWith("http")
         ? p.image
         : `${req.protocol}://${req.get("host")}${p.image}`,
     }));
+
     res.json(formatted);
   } catch (error) {
     console.error("❌ Error fetching products:", error);
@@ -22,11 +24,16 @@ export const getProducts = async (req, res) => {
 export const getProductsByCategory = async (req, res) => {
   try {
     const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid category ID" });
     }
 
-    const products = await Product.find({ category: id }).populate("category", "name");
+    const products = await Product.find({ category: id }).populate(
+      "category",
+      "name"
+    );
+
     const formatted = products.map((p) => ({
       ...p._doc,
       image: p.image?.startsWith("http")
@@ -44,7 +51,11 @@ export const getProductsByCategory = async (req, res) => {
 // 🆕 Get single product by ID
 export const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("category", "name");
+    const product = await Product.findById(req.params.id).populate(
+      "category",
+      "name"
+    );
+
     if (!product) return res.status(404).json({ message: "Product not found" });
 
     const imagePath = product.image?.startsWith("http")
@@ -58,27 +69,34 @@ export const getProductById = async (req, res) => {
   }
 };
 
+// 🔍 Search products by name (FIXED)
 // 🔍 Search products by name
 export const searchProducts = async (req, res) => {
-  const { query } = req.query; // get ?query= from URL
-
-  if (!query) return res.status(400).json({ message: "Query is required" });
-
   try {
+    const query = req.query.query || "";
+    if (!query) return res.json([]);
+
+    // Search in both English and Tamil names
     const products = await Product.find({
-      "name.en": { $regex: query, $options: "i" }, // case-insensitive search in English name
+      $or: [
+        { "name.en": { $regex: query, $options: "i" } },
+        { "name.ta": { $regex: query, $options: "i" } }
+      ]
     }).populate("category", "name");
 
-    const formatted = products.map((p) => ({
+    // Format image URLs
+    const formatted = products.map(p => ({
       ...p._doc,
       image: p.image?.startsWith("http")
         ? p.image
-        : `${req.protocol}://${req.get("host")}${p.image}`,
+        : `${req.protocol}://${req.get("host")}${p.image}`
     }));
 
     res.json(formatted);
   } catch (error) {
-    console.error("🔥 Error searching products:", error);
-    res.status(500).json({ message: "Failed to search products" });
+    console.error("Search Error:", error);
+    res.status(500).json({ message: "Server error during search" });
   }
 };
+
+

@@ -1,46 +1,61 @@
 import Wishlist from "../models/wishlistModel.js";
 
-// Get user wishlist
+// GET Wishlist
 export const getWishlist = async (req, res) => {
   try {
-    const wishlist = await Wishlist.findOne({ userId: req.params.userId }).populate("products");
-    res.json(wishlist || { products: [] });
+    const wishlist = await Wishlist.findOne({ user: req.user._id }).populate("products");
+    res.json({
+      products: wishlist?.products || [],
+    });
   } catch (err) {
     res.status(500).json({ message: "Error fetching wishlist" });
   }
 };
 
-// Add to wishlist
+// ADD to Wishlist
 export const addToWishlist = async (req, res) => {
-  const { userId, productId } = req.body;
   try {
-    let wishlist = await Wishlist.findOne({ userId });
-    if (!wishlist) wishlist = new Wishlist({ userId, products: [] });
+    const { productId } = req.body;
+    if (!productId) return res.status(400).json({ message: "ProductId required" });
+
+    let wishlist = await Wishlist.findOne({ user: req.user._id });
+
+    if (!wishlist) {
+      wishlist = new Wishlist({ user: req.user._id, products: [] });
+    }
 
     if (!wishlist.products.includes(productId)) {
       wishlist.products.push(productId);
-      await wishlist.save();
     }
 
-    res.json(wishlist);
+    await wishlist.save();
+
+    const populatedWishlist = await Wishlist.findOne({ user: req.user._id }).populate("products");
+
+    res.json({ products: populatedWishlist.products.reverse() }); // latest first
   } catch (err) {
-    res.status(500).json({ message: "Error adding to wishlist" });
+    res.status(500).json({ message: "Error adding wishlist item" });
   }
 };
 
-// Remove from wishlist
+// REMOVE from Wishlist – FIXED
 export const removeFromWishlist = async (req, res) => {
-  const { userId } = req.body;
-  const { productId } = req.params;
   try {
-    const wishlist = await Wishlist.findOne({ userId });
-    if (!wishlist) return res.status(404).json({ message: "Wishlist not found" });
+    const productId = req.params.id; // <- fix: use req.params.id
+    if (!productId) return res.status(400).json({ message: "ProductId required" });
 
-    wishlist.products = wishlist.products.filter((id) => id.toString() !== productId);
+    const wishlist = await Wishlist.findOne({ user: req.user._id });
+
+    if (!wishlist) return res.json({ products: [] });
+
+    wishlist.products = wishlist.products.filter((p) => p.toString() !== productId);
+
     await wishlist.save();
 
-    res.json(wishlist);
+    const updatedWishlist = await Wishlist.findOne({ user: req.user._id }).populate("products");
+
+    res.json({ products: updatedWishlist.products.reverse() }); // latest first
   } catch (err) {
-    res.status(500).json({ message: "Error removing from wishlist" });
+    res.status(500).json({ message: "Error removing wishlist item" });
   }
 };
