@@ -267,7 +267,7 @@ export default function Login() {
             />
 
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-wide text-center">
-              Welcome to Life Gain
+              Welcome to Life Gain Herbal Products
             </h1>
 
             <p className="mt-4 text-center text-white/80 text-base md:text-lg">

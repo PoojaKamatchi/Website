@@ -3,14 +3,15 @@ import { useWishlist } from "../components/WishlistContext";
 import { useCart } from "../components/CartContext";
 
 export default function WishlistPage() {
-  const { wishlist, removeFromWishlist, addToWishlist } = useWishlist();
+  const { wishlist, removeFromWishlist } = useWishlist();
   const { addToCart } = useCart();
-  const [message, setMessage] = useState(""); // For inline messages
+  const [message, setMessage] = useState("");
+
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const showMessage = (text) => {
     setMessage(text);
-    setTimeout(() => setMessage(""), 2000); // Hide after 2 seconds
+    setTimeout(() => setMessage(""), 2000);
   };
 
   if (!wishlist.length) {
@@ -37,7 +38,6 @@ export default function WishlistPage() {
         💖 Your Wishlist
       </h1>
 
-      {/* Inline message at top */}
       {message && (
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-green-200 text-green-800 rounded-lg shadow-md z-50">
           {message}
@@ -45,68 +45,46 @@ export default function WishlistPage() {
       )}
 
       <div className="flex flex-wrap justify-center gap-10">
-        {wishlist.map((item) => {
-          const productId = item._id;
+        {wishlist.map((item) => (
+          <div
+            key={item._id}
+            className="bg-white rounded-2xl shadow-md p-5 w-72 hover:shadow-2xl hover:scale-105 transition-transform duration-300 text-center border border-gray-100"
+          >
+            <img
+              src={item.image?.startsWith("http") ? item.image : `${API_URL}${item.image}`}
+              alt={item.name}
+              className="w-full h-48 object-cover rounded-xl mb-4 border border-gray-200"
+            />
+            <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
+            <p className="text-gray-500 text-sm mt-1 line-clamp-2">
+              {item.description || "No description available."}
+            </p>
+            <p className="text-green-700 font-semibold mt-3 text-lg">₹{item.price}</p>
 
-          return (
-            <div
-              key={productId}
-              className="bg-white rounded-2xl shadow-md p-5 w-72 hover:shadow-2xl hover:scale-105 transition-transform duration-300 text-center border border-gray-100"
-            >
-              {/* Product Image */}
-              <img
-                src={
-                  item.image
-                    ? item.image.startsWith("http")
-                      ? item.image
-                      : `${API_URL}${item.image}`
-                    : "/placeholder.jpg"
-                }
-                alt={item.name?.en || item.name?.ta}
-                className="w-full h-48 object-cover rounded-xl mb-4 border border-gray-200"
-              />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  addToCart(item); // add to cart
+                  removeFromWishlist(item._id); // remove from wishlist
+                  showMessage("✅ Product added to cart!");
+                }}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-2 transition"
+              >
+                🛒 Add to Cart
+              </button>
 
-              {/* Product Name */}
-              <h3 className="text-lg font-semibold text-gray-800">
-                {item.name?.ta || item.name?.en}
-              </h3>
-
-              {/* Product Description */}
-              <p className="text-gray-500 text-sm mt-1 line-clamp-2">
-                {item.description || "No description available."}
-              </p>
-
-              {/* Product Price */}
-              <p className="text-green-700 font-semibold mt-3 text-lg">
-                ₹{item.price}
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => {
-                    addToCart(item);
-                    removeFromWishlist(productId);
-                    showMessage("✅ Product added to cart!");
-                  }}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg py-2 transition"
-                >
-                  🛒 Add to Cart
-                </button>
-
-                <button
-                  onClick={() => {
-                    removeFromWishlist(productId);
-                    showMessage("💖 Product removed from wishlist!");
-                  }}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 transition"
-                >
-                  ❌ Remove
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  removeFromWishlist(item._id);
+                  showMessage("💖 Product removed!");
+                }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 transition"
+              >
+                ❌ Remove
+              </button>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );

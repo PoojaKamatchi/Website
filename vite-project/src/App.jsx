@@ -8,6 +8,7 @@ import Footer from "./components/Footer.jsx";
 
 // Pages
 import Home from "./pages/Home.jsx";
+
 import Cart from "./pages/Cart.jsx";
 import CategoryPage from "./pages/CategoryPage.jsx";
 import ProductPage from "./pages/ProductPage.jsx";
@@ -26,6 +27,7 @@ import ReviewsPage from "./pages/ReviewsPage.jsx";
 import AboutPage from "./pages/AboutPage.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
+import ContactPage from "./pages/Contact.jsx";
 
 function Layout({ children }) {
   const location = useLocation();
@@ -66,6 +68,8 @@ export default function App() {
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/contact" element={<ContactPage />} />
+
             </Routes>
           </Layout>
         </Router>
