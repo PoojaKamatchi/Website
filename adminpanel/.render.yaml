@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: adminpanel
+    env: node
+    plan: free
+    branch: main
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: VITE_API_URL
+        value: "https://your-backend-url.com"  # replace with your backend URL
