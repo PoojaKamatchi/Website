@@ -3,12 +3,78 @@ import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const cards = [
-    { title: "Products", description: "Manage your product list", path: "/admin/products", icon: "🛍️", color: "from-blue-500 to-indigo-600" },
-    { title: "Add Product", description: "Add new products to store", path: "/admin/products/add", icon: "➕", color: "from-green-400 to-emerald-500" },
-    { title: "Orders", description: "Track recent orders", path: "/admin/orders", icon: "📦", color: "from-yellow-400 to-orange-500" },
-    { title: "Users", description: "See customer details", path: "/admin/users", icon: "👥", color: "from-pink-500 to-rose-600" },
-    { title: "Reports", description: "View sales analytics", path: "/admin/reports", icon: "📊", color: "from-red-500 to-rose-600" },
-    { title: "Add Admin", description: "Add a new admin", path: "/admin/add-admin", icon: "👤➕", color: "from-purple-500 to-pink-500" },
+    { 
+      title: "Products", 
+      description: "Manage your product list", 
+      path: "/admin/products", 
+      icon: "🛍️", 
+      color: "from-blue-500 to-indigo-600" 
+    },
+
+    { 
+      title: "Add Category", 
+      description: "Create new categories", 
+      path: "/admin/add-category", 
+      icon: "📂", 
+      color: "from-teal-500 to-green-600" 
+    },
+
+    { 
+      title: "Add Product", 
+      description: "Add new products to store", 
+      path: "/admin/products/add", 
+      icon: "➕", 
+      color: "from-green-400 to-emerald-500" 
+    },
+
+    { 
+      title: "Orders", 
+      description: "Track recent orders", 
+      path: "/admin/orders", 
+      icon: "📦", 
+      color: "from-yellow-400 to-orange-500" 
+    },
+
+    { 
+      title: "Users", 
+      description: "See customer details", 
+      path: "/admin/users", 
+      icon: "👥", 
+      color: "from-pink-500 to-rose-600" 
+    },
+
+    { 
+      title: "Reports", 
+      description: "View sales analytics", 
+      path: "/admin/reports", 
+      icon: "📊", 
+      color: "from-red-500 to-rose-600" 
+    },
+
+    { 
+      title: "Add Admin", 
+      description: "Add a new admin", 
+      path: "/admin/add-admin", 
+      icon: "👤➕", 
+      color: "from-purple-500 to-pink-500" 
+    },
+
+    { 
+      title: "Contact Page", 
+      description: "Edit contact info", 
+      path: "/admin/contact", 
+      icon: "📞", 
+      color: "from-cyan-500 to-blue-500" 
+    },
+
+    // ✅ Added Offers card properly
+    { 
+      title: "Offers", 
+      description: "Manage discount offers", 
+      path: "/admin/offers", 
+      icon: "🏷️", 
+      color: "from-purple-500 to-indigo-500" 
+    }
   ];
 
   return (

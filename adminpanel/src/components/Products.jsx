@@ -44,7 +44,7 @@ const Products = () => {
   // ✅ Fetch Categories
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/admin/category", {
+      const res = await axios.get("http://localhost:5000/api/auth/admin/category", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCategories(res.data);

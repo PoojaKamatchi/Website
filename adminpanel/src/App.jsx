@@ -16,6 +16,10 @@ import Reports from "./components/Reports";
 import Login from "./pages/Login";
 import AddCategory from "./pages/AddCategory";
 import AddAdmin from "./pages/AddAdmin";
+import AdminContact from "./pages/AdminContact";
+import OfferForm from "./pages/OfferForm";
+import OffersPage from "./pages/OffersPage";
+
 
 // ---- Removed the problematic imports ----
 // import AdminForgotPassword from "./pages/AdminForgotPassword";
@@ -76,6 +80,10 @@ function App() {
                   <Route path="reports" element={<Reports />} />
                   <Route path="add-category" element={<AddCategory />} />
                   <Route path="add-admin" element={<AddAdmin />} />
+                  <Route path="contact" element={<AdminContact />} />
+<Route path="offers" element={<OffersPage />} />
+<Route path="offers/add" element={<OfferForm />} />
+
                 </Routes>
               </div>
             </div>

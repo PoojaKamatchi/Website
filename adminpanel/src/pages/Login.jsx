@@ -18,7 +18,7 @@ export default function AdminLogin() {
     setMessage("");
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/admin/login`, {
+      const res = await axios.post("http://localhost:5000/api/auth/admin/login", {
         email,
         password,
       });
@@ -37,11 +37,10 @@ export default function AdminLogin() {
     }
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/admin/verify-otp`, {
-  email,
-  otp,
-});
-
+      const res = await axios.post("http://localhost:5000/api/auth/admin/verify-otp", {
+        email,
+        otp,
+      });
 
       localStorage.setItem("adminToken", res.data.token);
       localStorage.setItem("adminName", res.data.admin.name);
