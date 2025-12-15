@@ -1,16 +1,15 @@
 // src/components/Products.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
 import { ToastContainer, toast } from "react-toastify";
+import { ReactTransliterate } from "react-transliterate";
 import "react-toastify/dist/ReactToastify.css";
+import "react-transliterate/dist/index.css";
 
-const Products = ({ products: initialProducts = [] }) => {
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  const token = localStorage.getItem("adminToken");
-
-  const [products, setProducts] = useState(initialProducts);
+const Products = () => {
+  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     nameEn: "",
@@ -22,48 +21,99 @@ const Products = ({ products: initialProducts = [] }) => {
     url: "",
     imageFile: null,
   });
+  const [imagePreview, setImagePreview] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem("adminToken");
 
-  // Fetch products
+  // Fetch Products
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/products`, {
+      const res = await axios.get("http://localhost:5000/api/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setProducts(res.data.products || res.data || []);
+
+      const data = Array.isArray(res.data) ? res.data : res.data.products || [];
+      // Normalize product names and categories
+      const normalized = data.map((p) => ({
+        ...p,
+        name: typeof p.name === "string" ? { en: p.name, ta: "" } : p.name,
+        category: p.category?._id ? p.category : p.category || null,
+      }));
+      setProducts(normalized);
     } catch (err) {
       console.error(err);
       toast.error("❌ Failed to load products!");
     }
   };
 
-  // Fetch categories
+  // Fetch Categories
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/auth/admin/category`, {
+      const res = await axios.get("http://localhost:5000/api/auth/admin/category", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCategories(res.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching categories:", err);
       toast.error("❌ Failed to load categories!");
     }
   };
 
   useEffect(() => {
+    if (!token) {
+      toast.error("❌ Admin token missing! Login required.");
+      return;
+    }
     fetchProducts();
     fetchCategories();
   }, []);
 
-  const handleFormChange = (e) => {
+  // Handle form change
+  const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (files) {
-      setFormData({ ...formData, imageFile: files[0] });
+    if (name === "imageFile" && files?.length > 0) {
+      const file = files[0];
+      setFormData((prev) => ({ ...prev, imageFile: file, url: "" }));
+      setImagePreview(URL.createObjectURL(file));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      if (name === "url") setImagePreview(value);
     }
   };
 
-  // Save edited product
+  // Get image source
+  const getImageSource = (product) => {
+    if (product.url) return product.url;
+    if (product.image?.startsWith("http")) return product.image;
+    if (product.image) return `http://localhost:5000${product.image}`;
+    return "https://via.placeholder.com/200x150?text=No+Image";
+  };
+
+  // Get category name
+  const getCategoryName = (category) => {
+    if (!category) return "Unknown";
+    const catId = category._id || category;
+    const found = categories.find((c) => c._id === catId);
+    return found ? `${found.name?.en || "-"} (${found.name?.ta || "-"})` : "Unknown";
+  };
+
+  // Edit product
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    setFormData({
+      nameEn: product.name?.en || "",
+      nameTa: product.name?.ta || "",
+      price: product.price || "",
+      stock: product.stock || "",
+      category: product.category?._id || product.category || "",
+      description: product.description || "",
+      url: product.image || "",
+      imageFile: null,
+    });
+    setImagePreview(getImageSource(product));
+  };
+
+  // Save product
   const handleSave = async () => {
     if (!editingProduct) return;
     setLoading(true);
@@ -73,13 +123,13 @@ const Products = ({ products: initialProducts = [] }) => {
       data.append("nameTa", formData.nameTa);
       data.append("price", formData.price);
       data.append("stock", formData.stock);
-      data.append("category", formData.category);
+      data.append("category", formData.category._id || formData.category);
       data.append("description", formData.description);
       data.append("imageUrl", formData.url);
       if (formData.imageFile) data.append("image", formData.imageFile);
 
       await axios.put(
-        `${API_URL}/api/auth/admin/products/${editingProduct._id}`,
+        `http://localhost:5000/api/auth/admin/products/${editingProduct._id}`,
         data,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -99,7 +149,7 @@ const Products = ({ products: initialProducts = [] }) => {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this product?")) return;
     try {
-      await axios.delete(`${API_URL}/api/auth/admin/products/${id}`, {
+      await axios.delete(`http://localhost:5000/api/auth/admin/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("🗑️ Product deleted!");
@@ -111,137 +161,179 @@ const Products = ({ products: initialProducts = [] }) => {
   };
 
   return (
-    <div className="p-6">
-      <ToastContainer position="top-right" autoClose={3000} />
-      <h2 className="text-3xl font-bold mb-6 text-blue-700">Products</h2>
+    <div className="p-10 min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200">
+      <ToastContainer position="top-center" autoClose={2000} />
+      <h1 className="text-4xl font-extrabold text-center text-indigo-800 mb-10">
+        🛍️ Product List
+      </h1>
 
-      <div className="grid gap-6">
-        {products.map((product) => (
-          <div
-            key={product._id}
-            className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">{product.nameEn}</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditingProduct(product);
-                    setFormData({
-                      nameEn: product.nameEn,
-                      nameTa: product.nameTa,
-                      price: product.price,
-                      stock: product.stock,
-                      category: product.category,
-                      description: product.description,
-                      url: product.imageUrl,
-                      imageFile: null,
-                    });
-                  }}
-                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+      {products.length === 0 ? (
+        <p className="text-center text-gray-600 text-lg">No products yet!</p>
+      ) : (
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          {products.map((product) => (
+            <motion.div
+              key={product._id}
+              className="bg-white text-gray-800 p-5 rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-transform border border-indigo-200"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <img
+                src={getImageSource(product)}
+                alt={typeof product.name === "object" ? product.name.en : product.name}
+                className="rounded-xl h-40 w-full object-cover mb-3 border border-gray-300"
+              />
+              <h2 className="font-bold text-lg">
+                {typeof product.name === "object" ? product.name.en : product.name}{" "}
+                <span className="text-indigo-600 text-sm font-semibold">
+                  ({typeof product.name === "object" ? product.name.ta : "-"})
+                </span>
+              </h2>
+              <p className="text-sm text-gray-600">
+                Category:{" "}
+                <span className="font-semibold text-gray-900">
+                  {getCategoryName(product.category)}
+                </span>
+              </p>
+              <p>💰 Price: ₹{product.price}</p>
+              <p className="font-semibold text-gray-900">
+                📦 Stock:{" "}
+                <span
+                  className={`${
+                    product.stock <= 5
+                      ? "text-red-500"
+                      : product.stock <= 10
+                      ? "text-yellow-500"
+                      : "text-green-600"
+                  }`}
                 >
-                  Edit
+                  {product.stock}
+                </span>
+              </p>
+              {product.description && (
+                <p className="text-gray-700 mt-2 text-sm italic">{product.description}</p>
+              )}
+              <div className="flex justify-between mt-4">
+                <button
+                  onClick={() => handleEdit(product)}
+                  className="bg-yellow-400 text-black px-3 py-1 rounded-lg hover:bg-yellow-500"
+                >
+                  ✏️ Edit
                 </button>
                 <button
                   onClick={() => handleDelete(product._id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  className="bg-red-600 px-3 py-1 rounded-lg text-white hover:bg-red-700"
                 >
-                  Delete
+                  🗑️ Delete
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl"
+          >
+            <h2 className="text-2xl font-bold text-indigo-700 mb-4">✏️ Edit Product</h2>
+            <div className="space-y-4">
+              <input
+                type="text"
+                name="nameEn"
+                value={formData.nameEn}
+                onChange={handleChange}
+                placeholder="Product Name (English)"
+                className="w-full border rounded-lg p-2"
+              />
+              <ReactTransliterate
+                value={formData.nameTa}
+                onChangeText={(text) =>
+                  setFormData((prev) => ({ ...prev, nameTa: text }))
+                }
+                lang="ta"
+                placeholder="பொருள் பெயர் (தமிழ்)"
+                className="w-full border rounded-lg p-2"
+              />
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Product Description"
+                className="w-full border rounded-lg p-2 h-24 resize-none"
+              />
+              <input
+                type="text"
+                name="url"
+                value={formData.url}
+                onChange={handleChange}
+                placeholder="Paste Image URL"
+                className="w-full border rounded-lg p-2"
+              />
+              <input
+                type="file"
+                name="imageFile"
+                accept="image/*"
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg"
+              />
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="h-32 w-32 mt-3 rounded-lg object-cover border"
+                />
+              )}
+              <select
+                name="category"
+                value={formData.category._id || formData.category || ""}
+                onChange={handleChange}
+                className="w-full border rounded-lg p-2"
+              >
+                <option value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name?.en} / {cat.name?.ta || ""}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                placeholder="Price (₹)"
+                className="w-full border rounded-lg p-2"
+              />
+              <input
+                type="number"
+                name="stock"
+                value={formData.stock}
+                onChange={handleChange}
+                placeholder="Stock"
+                className="w-full border rounded-lg p-2"
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => setEditingProduct(null)}
+                  className="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  {loading ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
-            <p>Price: ₹{product.price}</p>
-            <p>Stock: {product.stock}</p>
-            <p>Category: {product.category}</p>
-            <p>{product.description}</p>
-          </div>
-        ))}
-      </div>
-
-      {editingProduct && (
-        <div className="mt-6 p-4 bg-gray-50 border rounded shadow">
-          <h3 className="font-bold mb-4">Edit Product</h3>
-          <input
-            type="text"
-            name="nameEn"
-            value={formData.nameEn}
-            onChange={handleFormChange}
-            placeholder="Product Name (EN)"
-            className="border p-2 w-full rounded mb-2"
-          />
-          <input
-            type="text"
-            name="nameTa"
-            value={formData.nameTa}
-            onChange={handleFormChange}
-            placeholder="Product Name (TA)"
-            className="border p-2 w-full rounded mb-2"
-          />
-          <input
-            type="number"
-            name="price"
-            value={formData.price}
-            onChange={handleFormChange}
-            placeholder="Price"
-            className="border p-2 w-full rounded mb-2"
-          />
-          <input
-            type="number"
-            name="stock"
-            value={formData.stock}
-            onChange={handleFormChange}
-            placeholder="Stock"
-            className="border p-2 w-full rounded mb-2"
-          />
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleFormChange}
-            className="border p-2 w-full rounded mb-2"
-          >
-            <option value="">Select Category</option>
-            {categories.map((c) => (
-              <option key={c._id} value={c.name}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleFormChange}
-            placeholder="Description"
-            className="border p-2 w-full rounded mb-2"
-          />
-          <input
-            type="text"
-            name="url"
-            value={formData.url}
-            onChange={handleFormChange}
-            placeholder="Image URL"
-            className="border p-2 w-full rounded mb-2"
-          />
-          <input
-            type="file"
-            name="imageFile"
-            onChange={handleFormChange}
-            className="mb-2"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              {loading ? "Saving..." : "Save"}
-            </button>
-            <button
-              onClick={() => setEditingProduct(null)}
-              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
