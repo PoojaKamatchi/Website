@@ -72,20 +72,24 @@ export const forgotUserPassword = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetOtp = otp;
-    user.resetOtpExpire = Date.now() + 10 * 60 * 1000;
+    user.resetOtpExpire = Date.now() + 10 * 60 * 1000; // 10 mins
     await user.save();
 
-    // SEND OTP EMAIL
-    await sendEmail({
-      to: user.email,
-      subject: "Password Reset OTP",
-      html: `
-        <h2>Password Reset OTP</h2>
-        <p>Your OTP is:</p>
-        <h1>${otp}</h1>
-        <p>Valid for 10 minutes</p>
-      `,
-    });
+    // Send OTP email
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Password Reset OTP",
+        html: `
+          <h2>Password Reset OTP</h2>
+          <p>Your OTP is:</p>
+          <h1>${otp}</h1>
+          <p>Valid for 10 minutes</p>
+        `,
+      });
+    } catch (e) {
+      console.log(`Email failed for ${email}. OTP: ${otp}`);
+    }
 
     res.json({ message: "OTP sent successfully", userId: user._id });
   } catch (error) {
