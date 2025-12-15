@@ -1,11 +1,10 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
-import { generateToken }  from "../utils/generateToken.js";
+import { generateToken } from "../utils/generateToken.js";
 
-// ✅ REGISTER USER
+// REGISTER USER
 export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
-
   if (!name || !email || !password)
     return res.status(400).json({ message: "All fields are required" });
 
@@ -14,13 +13,15 @@ export const registerUser = async (req, res) => {
     if (existingUser)
       return res.status(400).json({ message: "Email already registered" });
 
-    const user = await User.create({ name, email, password });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, password: hashedPassword });
 
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       token: generateToken(user._id),
+      userId: user._id, // for OTP flow
     });
   } catch (error) {
     console.error("Register Error:", error);
@@ -28,23 +29,18 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// ✅ LOGIN USER
+// LOGIN USER
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const user = await User.findOne({ email });
-    if (!user || !(await user.matchPassword(password))) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
-
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role || "customer",
-      phone: user.phone || "",
-      profilePic: user.profilePic || "",
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -53,7 +49,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// ✅ GET USER PROFILE
+// GET USER PROFILE
 export const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -65,32 +61,27 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-// ✅ UPDATE USER PROFILE
+// UPDATE USER PROFILE
 export const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const { name, phone, profilePic, password } = req.body;
-
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (profilePic) user.profilePic = profilePic;
     if (password) user.password = await bcrypt.hash(password, 10);
 
     await user.save();
-
-    res.json({
-      message: "Profile updated successfully",
-      user,
-    });
+    res.json({ message: "Profile updated", user });
   } catch (error) {
     console.error("Update Profile Error:", error);
     res.status(500).json({ message: "Error updating profile" });
   }
 };
 
-// ✅ UPDATE USER ADDRESS
+// UPDATE USER ADDRESS
 export const updateUserAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -111,13 +102,68 @@ export const updateUserAddress = async (req, res) => {
   }
 };
 
-// ✅ GET ALL USERS (Admin only)
-export const getAllUsers = async (req, res) => {
+// FORGOT PASSWORD (SEND OTP)
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email required" });
+
   try {
-    const users = await User.find().select("-password");
-    res.status(200).json(users);
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Generate OTP and save it temporarily (example: 6-digit)
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    user.otp = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await user.save();
+
+    console.log(`OTP for ${email}: ${otp}`); // For testing; replace with email service
+    res.json({ message: "OTP sent", userId: user._id });
   } catch (error) {
-    console.error("Get All Users Error:", error);
-    res.status(500).json({ message: "Error fetching users" });
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// VERIFY OTP
+export const verifyOtp = async (req, res) => {
+  const { userId, otp } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.otp != otp || Date.now() > user.otpExpires)
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
+
+    res.json({ message: "OTP verified", token: generateToken(user._id) });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// RESET PASSWORD
+export const resetPassword = async (req, res) => {
+  const { userId, otp, newPassword } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.otp != otp || Date.now() > user.otpExpires)
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
+
+    res.json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };

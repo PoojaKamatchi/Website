@@ -52,7 +52,8 @@ app.use(
         "http://localhost:5173",
         "http://localhost:5174",
         "https://vite-project-awha.onrender.com",
-        "https://website-tjd8-3womia9iv-poojakamatchis-projects.vercel.app",
+       " https://adminpanel-7pn1.onrender.com/admin/login"
+
       ];
 
       // Allow Render frontend domains
