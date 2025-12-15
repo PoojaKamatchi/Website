@@ -7,21 +7,32 @@ import {
   resetAdminPassword,
   registerAdmin,
   getAllUsers,
+
+  // ✅ ADD THESE
+  forgotUserPassword,
+  resetUserPassword,
+  verifyUserOtp,
 } from "../controllers/authController.js";
-import { protect, adminProtect } from "../middleware/authMiddleware.js";
+
+import { adminProtect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// user
+// ---------- USER ----------
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
-// admin
+// ✅ ADD THESE USER ROUTES
+router.post("/forgot-password", forgotUserPassword);
+router.post("/verify-otp", verifyUserOtp);
+router.put("/reset-password", resetUserPassword);
+
+// ---------- ADMIN ----------
 router.post("/admin/login", adminLogin);
 router.post("/admin/forgot-password", forgotAdminPassword);
 router.put("/admin/reset-password/:token", resetAdminPassword);
 
-// admin protected
+// ---------- ADMIN PROTECTED ----------
 router.post("/admin/register", adminProtect, registerAdmin);
 router.get("/admin/users", adminProtect, getAllUsers);
 

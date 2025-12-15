@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String },
     role: { type: String, default: "user" },
     profilePic: { type: String },
+
     address: {
       street: String,
       city: String,
@@ -19,6 +20,10 @@ const userSchema = new mongoose.Schema(
       lat: Number,
       lng: Number,
     },
+
+    // ✅ FOR USER FORGOT PASSWORD (OTP)
+    resetOtp: String,
+    resetOtpExpire: Date,
   },
   { timestamps: true }
 );
