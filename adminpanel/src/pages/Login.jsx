@@ -11,6 +11,9 @@ export default function AdminLogin() {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
+  // ✅ Backend URL from environment
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   // Step 1: Request OTP
   const handleRequestOtp = async (e) => {
     e.preventDefault();
@@ -18,7 +21,7 @@ export default function AdminLogin() {
     setMessage("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/admin/login", {
+      const res = await axios.post(`${API_URL}/api/auth/admin/login`, {
         email,
         password,
       });
@@ -37,7 +40,7 @@ export default function AdminLogin() {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/admin/verify-otp", {
+      const res = await axios.post(`${API_URL}/api/auth/admin/verify-otp`, {
         email,
         otp,
       });
