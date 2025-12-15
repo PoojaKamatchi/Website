@@ -52,7 +52,7 @@ app.use(
         "http://localhost:5173",
         "http://localhost:5174",
         "https://vite-project-awha.onrender.com",
-       " https://adminpanel-7pn1.onrender.com/admin/login"
+       "https://adminpanel-7pn1.onrender.com",
 
       ];
 
