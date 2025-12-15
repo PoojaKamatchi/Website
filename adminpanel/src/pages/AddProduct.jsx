@@ -13,14 +13,15 @@ const AddProduct = ({ onProductAdded }) => {
     stock: "",
     category: "",
     description: "",
-    imageFile: null,   // file object
-    imageUrl: "",      // optional URL
+    imageFile: null, // file object
+    imageUrl: "", // optional URL
   });
 
   const [imagePreview, setImagePreview] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("adminToken");
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     fetchCategories();
@@ -28,10 +29,13 @@ const AddProduct = ({ onProductAdded }) => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/auth/admin/category");
+      const res = await axios.get(`${API_URL}/api/auth/admin/category`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       setCategories(res.data);
     } catch (err) {
       toast.error("⚠️ Failed to fetch categories!");
+      console.error(err);
     }
   };
 
@@ -40,10 +44,10 @@ const AddProduct = ({ onProductAdded }) => {
     if (name === "imageFile") {
       const file = files[0];
       setForm({ ...form, imageFile: file, imageUrl: "" });
-      setImagePreview(URL.createObjectURL(file));
+      setImagePreview(file ? URL.createObjectURL(file) : null);
     } else if (name === "imageUrl") {
       setForm({ ...form, imageUrl: value, imageFile: null });
-      setImagePreview(value);
+      setImagePreview(value || null);
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -70,17 +74,18 @@ const AddProduct = ({ onProductAdded }) => {
       formData.append("stock", form.stock);
       formData.append("category", form.category);
       formData.append("description", form.description);
-      if (form.imageFile) formData.append("image", form.imageFile); // must match backend field name
+      if (form.imageFile) formData.append("image", form.imageFile);
       else formData.append("imageUrl", form.imageUrl);
 
-      await axios.post("http://localhost:5000/api/auth/admin/products", formData, {
+      await axios.post(`${API_URL}/api/auth/admin/products`, formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
           "Content-Type": "multipart/form-data",
         },
       });
 
       toast.success("✅ Product added successfully!");
+      // Reset form
       setForm({
         nameEn: "",
         nameTa: "",
@@ -92,6 +97,8 @@ const AddProduct = ({ onProductAdded }) => {
         imageUrl: "",
       });
       setImagePreview(null);
+
+      // Optional callback to parent
       if (onProductAdded) onProductAdded();
     } catch (err) {
       console.error("🔥 Product upload error:", err.response?.data || err.message);

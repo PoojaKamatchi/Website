@@ -11,6 +11,8 @@ const AddCategory = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [categories, setCategories] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const token = localStorage.getItem("adminToken");
 
   useEffect(() => {
@@ -19,7 +21,7 @@ const AddCategory = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/auth/admin/category", {
+      const res = await axios.get(`${API_URL}/api/auth/admin/category`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       setCategories(res.data);
@@ -29,7 +31,6 @@ const AddCategory = () => {
     }
   };
 
-  // --- handle image file upload ---
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -38,7 +39,6 @@ const AddCategory = () => {
     setImagePreview(URL.createObjectURL(file));
   };
 
-  // --- handle image URL input ---
   const handleUrlChange = (e) => {
     const url = e.target.value;
     setImageUrl(url);
@@ -52,7 +52,7 @@ const AddCategory = () => {
     setNameTa(category.name?.ta || "");
     const imageSrc = category.image?.startsWith("http")
       ? category.image
-      : `http://localhost:5000${category.image}`;
+      : `${API_URL}${category.image}`;
     setImagePreview(imageSrc);
     setImageFile(null);
     setImageUrl(category.image?.startsWith("http") ? category.image : "");
@@ -61,7 +61,7 @@ const AddCategory = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/auth/admin/category/${id}`, {
+      await axios.delete(`${API_URL}/api/auth/admin/category/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       alert("✅ Category deleted successfully!");
@@ -96,24 +96,27 @@ const AddCategory = () => {
       }
 
       if (editingId) {
-        // Update existing category
         await axios.put(
-          `http://localhost:5000/api/auth/admin/category/${editingId}`,
+          `${API_URL}/api/auth/admin/category/${editingId}`,
           formData,
-          { headers: { "Content-Type": "multipart/form-data", ...(token ? { Authorization: `Bearer ${token}` } : {}) } }
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+          }
         );
         alert("✅ Category updated successfully!");
       } else {
-        // Add new category
-        await axios.post(
-          "http://localhost:5000/api/auth/admin/category",
-          formData,
-          { headers: { "Content-Type": "multipart/form-data", ...(token ? { Authorization: `Bearer ${token}` } : {}) } }
-        );
+        await axios.post(`${API_URL}/api/auth/admin/category`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
         alert("✅ Category added successfully!");
       }
 
-      // Reset form
       setEditingId(null);
       setNameEn("");
       setNameTa("");
@@ -144,7 +147,6 @@ const AddCategory = () => {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* English & Tamil name fields */}
           <div className="grid sm:grid-cols-2 gap-4">
             <input
               type="text"
@@ -157,12 +159,11 @@ const AddCategory = () => {
               lang="ta"
               value={nameTa}
               onChangeText={setNameTa}
-              placeholder="பொருள் பெயர் (தமிழ்) — type like 'arisi'"
+              placeholder="பொருள் பெயர் (தமிழ்)"
               className="w-full p-4 rounded-xl border-2 border-gray-300 bg-gray-50 outline-none"
             />
           </div>
 
-          {/* File upload */}
           <div>
             <input
               type="file"
@@ -172,7 +173,6 @@ const AddCategory = () => {
             />
           </div>
 
-          {/* OR URL input */}
           <div>
             <input
               type="text"
@@ -183,7 +183,6 @@ const AddCategory = () => {
             />
           </div>
 
-          {/* Image preview */}
           {imagePreview && (
             <div className="flex justify-center">
               <img
@@ -194,7 +193,6 @@ const AddCategory = () => {
             </div>
           )}
 
-          {/* Buttons */}
           <div className="flex space-x-2">
             <button
               type="submit"
@@ -216,7 +214,6 @@ const AddCategory = () => {
 
         <hr className="my-6 border-gray-300" />
 
-        {/* Existing categories */}
         <h2 className="text-xl font-semibold mb-4">Existing Categories</h2>
         <div className="grid sm:grid-cols-3 gap-3">
           {categories.length ? (
@@ -226,7 +223,7 @@ const AddCategory = () => {
                 <p className="text-sm text-gray-600">{c.name?.ta}</p>
                 {c.image && (
                   <img
-                    src={c.image.startsWith("http") ? c.image : `http://localhost:5000${c.image}`}
+                    src={c.image.startsWith("http") ? c.image : `${API_URL}${c.image}`}
                     alt={c.name?.en}
                     className="w-full h-20 object-cover mt-2 rounded"
                   />

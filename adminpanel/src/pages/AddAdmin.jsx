@@ -8,6 +8,8 @@ export default function AddAdmin() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -15,16 +17,23 @@ export default function AddAdmin() {
 
     try {
       const token = localStorage.getItem("adminToken");
+      if (!token) {
+        setError("Admin login required");
+        return;
+      }
+
       const { data } = await axios.post(
-        "http://localhost:5000/api/admin/register",
+        `${API_URL}/api/admin/register`,
         { name, email, password },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage(data.message);
+
+      setMessage(data.message || "Admin added successfully!");
       setName("");
       setEmail("");
       setPassword("");
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.message || "Error adding admin");
     }
   };

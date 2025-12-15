@@ -7,7 +7,7 @@ export default function OfferForm({ API_URL, onSuccess }) {
   const [discount, setDiscount] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState(null);
-  const [previewSrc, setPreviewSrc] = useState(null); // <-- preview image
+  const [previewSrc, setPreviewSrc] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Update preview whenever URL or file changes
@@ -34,9 +34,9 @@ export default function OfferForm({ API_URL, onSuccess }) {
       formData.append("discount", discount);
 
       if (imageFile) {
-        formData.append("imageFile", imageFile);
+        formData.append("imageFile", imageFile); // file
       } else if (imageUrl) {
-        formData.append("image", imageUrl);
+        formData.append("image", imageUrl); // URL
       }
 
       await axios.post(`${API_URL}/api/offers`, formData, {
@@ -51,10 +51,10 @@ export default function OfferForm({ API_URL, onSuccess }) {
       setImageFile(null);
       setPreviewSrc(null);
 
-      onSuccess();
+      if (onSuccess) onSuccess();
     } catch (err) {
       console.error("Error adding offer:", err);
-      alert("Failed to add offer. Check console for details.");
+      alert("❌ Failed to add offer. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -125,9 +125,9 @@ export default function OfferForm({ API_URL, onSuccess }) {
       <button
         type="submit"
         disabled={loading}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl w-full transition duration-300"
+        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 rounded-xl w-full transition duration-300 disabled:opacity-60"
       >
-        {loading ? "Adding..." : "Add Offer"}
+        {loading ? "⏳ Adding..." : "Add Offer"}
       </button>
     </form>
   );

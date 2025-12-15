@@ -10,16 +10,26 @@ const Users = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const token = localStorage.getItem("adminToken");
+
   const fetchUsers = async () => {
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("adminToken");
-      const res = await axios.get("http://localhost:5000/api/auth/admin/users", {
+      const res = await axios.get(`${API_URL}/api/auth/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUsers(res.data);
-      setFilteredUsers(res.data);
+      setUsers(res.data || []);
+      setFilteredUsers(res.data || []);
     } catch (err) {
       console.error("Failed to fetch users:", err);
+      alert("Failed to fetch users. Please login again.");
+      localStorage.removeItem("adminToken");
+      window.location.href = "/login";
     } finally {
       setLoading(false);
     }

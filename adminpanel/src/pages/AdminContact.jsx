@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 
 export default function AdminContact() {
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const [contactInfo, setContactInfo] = useState({
     title: "",
     description: "",
@@ -19,7 +21,7 @@ export default function AdminContact() {
   useEffect(() => {
     const fetchAdminInfo = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/contact");
+        const res = await fetch(`${API_URL}/api/contact`);
         const data = await res.json();
         if (data) {
           setContactInfo(data);
@@ -30,7 +32,7 @@ export default function AdminContact() {
       }
     };
     fetchAdminInfo();
-  }, []);
+  }, [API_URL]);
 
   const handleChange = (e) => {
     setContactInfo({ ...contactInfo, [e.target.name]: e.target.value });
@@ -44,7 +46,7 @@ export default function AdminContact() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:5000/api/admin/contact", {
+      const res = await fetch(`${API_URL}/api/admin/contact`, {
         method: "POST", // or PUT depending on backend
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(contactInfo),

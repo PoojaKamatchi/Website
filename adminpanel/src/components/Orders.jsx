@@ -9,17 +9,18 @@ const Orders = () => {
   const [error, setError] = useState("");
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const token = localStorage.getItem("adminToken");
 
+  // ✅ Fetch Orders
   const fetchOrders = async () => {
-    try {
-      const adminToken = localStorage.getItem("adminToken");
-      if (!adminToken) {
-        window.location.href = "/login";
-        return;
-      }
+    if (!token) {
+      window.location.href = "/login";
+      return;
+    }
 
+    try {
       const res = await axios.get(`${API_URL}/api/orders/all`, {
-        headers: { Authorization: `Bearer ${adminToken}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const allOrders = res.data || [];
@@ -33,19 +34,19 @@ const Orders = () => {
     }
   };
 
+  // ✅ Filter Orders by Status
   const filterOrders = (status) => {
     setStatusFilter(status);
-    if (status === "All") setFilteredOrders(orders);
-    else setFilteredOrders(orders.filter((o) => o.status === status));
+    setFilteredOrders(status === "All" ? orders : orders.filter((o) => o.status === status));
   };
 
+  // ✅ Update Order Status
   const updateOrderStatus = async (id, newStatus) => {
     try {
-      const adminToken = localStorage.getItem("adminToken");
       await axios.put(
         `${API_URL}/api/orders/status/${id}`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${adminToken}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchOrders();
     } catch (err) {
@@ -54,13 +55,16 @@ const Orders = () => {
     }
   };
 
+  // ✅ Cancel Order
   const cancelOrder = async (id) => {
     if (!window.confirm("Are you sure?")) return;
+
     try {
-      const adminToken = localStorage.getItem("adminToken");
-      await axios.put(`${API_URL}/api/orders/${id}/cancel`, {}, {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
+      await axios.put(
+        `${API_URL}/api/orders/${id}/cancel`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       fetchOrders();
     } catch (err) {
       console.error("Cancel Error:", err);
@@ -90,21 +94,19 @@ const Orders = () => {
 
       {/* Filter Buttons */}
       <div className="flex justify-center gap-4 mb-8">
-        {["All", "Processing", "Shipped", "Delivered", "Cancelled"].map(
-          (status) => (
-            <button
-              key={status}
-              onClick={() => filterOrders(status)}
-              className={`px-5 py-2 rounded-md font-medium transition ${
-                statusFilter === status
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
-            >
-              {status}
-            </button>
-          )
-        )}
+        {["All", "Processing", "Shipped", "Delivered", "Cancelled"].map((status) => (
+          <button
+            key={status}
+            onClick={() => filterOrders(status)}
+            className={`px-5 py-2 rounded-md font-medium transition ${
+              statusFilter === status
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+            }`}
+          >
+            {status}
+          </button>
+        ))}
       </div>
 
       {filteredOrders.length === 0 ? (

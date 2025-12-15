@@ -43,14 +43,7 @@ const Dashboard = () => {
       color: "from-pink-500 to-rose-600" 
     },
 
-    { 
-      title: "Reports", 
-      description: "View sales analytics", 
-      path: "/admin/reports", 
-      icon: "📊", 
-      color: "from-red-500 to-rose-600" 
-    },
-
+   
     { 
       title: "Add Admin", 
       description: "Add a new admin", 

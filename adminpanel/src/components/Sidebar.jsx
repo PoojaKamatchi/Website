@@ -9,6 +9,8 @@ import {
   ChartBarIcon,
   TagIcon,
   UserPlusIcon,
+  GiftIcon,       // For Offers
+  PhoneIcon       // For Contact Page
 } from "@heroicons/react/24/outline";
 
 const menuItems = [
@@ -17,9 +19,10 @@ const menuItems = [
   { name: "Add Product", path: "/admin/products/add", icon: <PlusCircleIcon className="w-5 h-5 mr-3" /> },
   { name: "Orders", path: "/admin/orders", icon: <ShoppingCartIcon className="w-5 h-5 mr-3" /> },
   { name: "Users", path: "/admin/users", icon: <UserIcon className="w-5 h-5 mr-3" /> },
-  { name: "Reports", path: "/admin/reports", icon: <ChartBarIcon className="w-5 h-5 mr-3" /> },
   { name: "Add Category", path: "/admin/add-category", icon: <TagIcon className="w-5 h-5 mr-3" /> },
   { name: "Add Admin", path: "/admin/add-admin", icon: <UserPlusIcon className="w-5 h-5 mr-3" /> },
+  { name: "Offers", path: "/admin/offers", icon: <GiftIcon className="w-5 h-5 mr-3" /> },        // New
+  { name: "Contact Page", path: "/admin/contact", icon: <PhoneIcon className="w-5 h-5 mr-3" /> }, // New
 ];
 
 function Sidebar() {
