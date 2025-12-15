@@ -1,7 +1,8 @@
 // src/components/Products.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Products = ({ products: initialProducts = [] }) => {
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -22,7 +23,7 @@ const Products = ({ products: initialProducts = [] }) => {
     imageFile: null,
   });
 
-  // Fetch products from API
+  // Fetch products
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/products`, {
@@ -43,7 +44,7 @@ const Products = ({ products: initialProducts = [] }) => {
       });
       setCategories(res.data || []);
     } catch (err) {
-      console.error("Error fetching categories:", err);
+      console.error(err);
       toast.error("❌ Failed to load categories!");
     }
   };
@@ -53,7 +54,6 @@ const Products = ({ products: initialProducts = [] }) => {
     fetchCategories();
   }, []);
 
-  // Handle form changes
   const handleFormChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
@@ -112,6 +112,7 @@ const Products = ({ products: initialProducts = [] }) => {
 
   return (
     <div className="p-6">
+      <ToastContainer position="top-right" autoClose={3000} />
       <h2 className="text-3xl font-bold mb-6 text-blue-700">Products</h2>
 
       <div className="grid gap-6">
