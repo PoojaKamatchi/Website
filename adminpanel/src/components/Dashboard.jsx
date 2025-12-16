@@ -44,14 +44,7 @@ const Dashboard = () => {
     },
 
    
-    { 
-      title: "Add Admin", 
-      description: "Add a new admin", 
-      path: "/admin/add-admin", 
-      icon: "👤➕", 
-      color: "from-purple-500 to-pink-500" 
-    },
-
+   
     { 
       title: "Contact Page", 
       description: "Edit contact info", 
