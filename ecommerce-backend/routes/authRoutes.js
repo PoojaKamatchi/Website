@@ -1,17 +1,17 @@
 import express from "express";
 import {
   registerUser,
+  verifyRegisterOtp,
   loginUser,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
+  getProfile,
   adminLogin,
   forgotAdminPassword,
   resetAdminPassword,
   registerAdmin,
   getAllUsers,
-
-  // ✅ ADD THESE
-  forgotUserPassword,
-  resetUserPassword,
-  verifyUserOtp,
 } from "../controllers/authController.js";
 
 import { adminProtect } from "../middleware/authMiddleware.js";
@@ -19,13 +19,13 @@ import { adminProtect } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // ---------- USER ----------
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-
-// ✅ ADD THESE USER ROUTES
-router.post("/forgot-password", forgotUserPassword);
-router.post("/verify-otp", verifyUserOtp);
-router.put("/reset-password", resetUserPassword);
+router.post("/register-otp", registerUser);       // Register with OTP
+router.post("/verify-register-otp", verifyRegisterOtp); // Verify registration OTP
+router.post("/login", loginUser);                 // Login
+router.post("/forgot-password", forgotPassword); // Forgot password (send OTP)
+router.post("/verify-otp", verifyOtp);           // Verify OTP for password reset
+router.put("/reset-password", resetPassword);    // Reset password
+router.get("/profile/:userId", getProfile);      // Get user profile
 
 // ---------- ADMIN ----------
 router.post("/admin/login", adminLogin);

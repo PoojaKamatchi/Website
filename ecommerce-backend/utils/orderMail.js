@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 export const sendOrderNotification = async (order) => {
   try {
     const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE, // Gmail, outlook, etc.
+      service: process.env.EMAIL_SERVICE,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -11,10 +11,7 @@ export const sendOrderNotification = async (order) => {
     });
 
     const itemsList = order.orderItems
-      .map(
-        (item) =>
-          `<li>${item.name} × ${item.quantity} — ₹${item.price}</li>`
-      )
+      .map(item => `<li>${item.name} × ${item.quantity} — ₹${item.price}</li>`)
       .join("");
 
     const htmlContent = `
@@ -23,18 +20,16 @@ export const sendOrderNotification = async (order) => {
       <p><b>Name:</b> ${order.name}</p>
       <p><b>Mobile:</b> ${order.mobile}</p>
       <p><b>Address:</b> ${order.shippingAddress}</p>
-      <p><b>Payment:</b> ${order.paymentMethod}</p>
 
       <h3>Items:</h3>
       <ul>${itemsList}</ul>
 
       <h3>Total Amount: ₹${order.totalAmount}</h3>
-      <p>Shipping Charge: ₹${order.shippingCharge}</p>
     `;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: process.env.ADMIN_EMAIL, // Your client email
+      to: process.env.ADMIN_EMAIL,
       subject: `New Order Received - ${order._id}`,
       html: htmlContent,
     });

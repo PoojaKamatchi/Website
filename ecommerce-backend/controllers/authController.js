@@ -9,37 +9,71 @@ import sendEmail from "../utils/sendEmail.js";
 // JWT GENERATOR
 // ==========================
 const generateToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || "7d" });
 
 // ==========================
-// USER REGISTER
+// USER CONTROLLERS
 // ==========================
+
+// REGISTER USER (send OTP)
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, mobile } = req.body;
+    const { name, email, password } = req.body;
+    if (!name || !email || !password)
+      return res.status(400).json({ message: "All fields required" });
 
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ message: "User already exists" });
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, mobile });
 
-    res.status(201).json({
-      message: "User registered",
-      token: generateToken(user._id),
-      user,
+    const user = await User.create({
+      name,
+      email,
+      password: hashed,
+      resetOtp: otp,
+      resetOtpExpire: Date.now() + 10 * 60 * 1000, // 10 minutes
     });
+
+    console.log(`Registration OTP for ${email}: ${otp}`); // for testing
+
+    await sendEmail({
+      to: email,
+      subject: "OTP for Registration",
+      html: `<h2>Your OTP is ${otp}</h2><p>Valid for 10 minutes</p>`,
+    });
+
+    res.status(201).json({ userId: user._id, message: "OTP sent to email" });
   } catch (error) {
     console.error("REGISTER ERROR:", error);
     res.status(500).json({ message: "Register failed" });
   }
 };
 
-// ==========================
-// USER LOGIN
-// ==========================
+// VERIFY REGISTER OTP
+export const verifyRegisterOtp = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+    const user = await User.findById(userId);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.resetOtp !== otp || Date.now() > user.resetOtpExpire)
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+
+    user.resetOtp = null;
+    user.resetOtpExpire = null;
+    await user.save();
+
+    res.json({ message: "Registration verified successfully" });
+  } catch (error) {
+    console.error("VERIFY OTP ERROR:", error);
+    res.status(500).json({ message: "OTP verification failed" });
+  }
+};
+
+// LOGIN USER
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -53,7 +87,12 @@ export const loginUser = async (req, res) => {
     res.json({
       message: "Login successful",
       token: generateToken(user._id),
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
     });
   } catch (error) {
     console.error("LOGIN ERROR:", error);
@@ -61,10 +100,8 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// ==========================
-// USER FORGOT PASSWORD (OTP)
-// ==========================
-export const forgotUserPassword = async (req, res) => {
+// FORGOT PASSWORD (send OTP)
+export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
@@ -72,66 +109,54 @@ export const forgotUserPassword = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetOtp = otp;
-    user.resetOtpExpire = Date.now() + 10 * 60 * 1000; // 10 mins
+    user.resetOtpExpire = Date.now() + 10 * 60 * 1000; // 10 min
     await user.save();
 
-    // Send OTP email
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: "Password Reset OTP",
-        html: `
-          <h2>Password Reset OTP</h2>
-          <p>Your OTP is:</p>
-          <h1>${otp}</h1>
-          <p>Valid for 10 minutes</p>
-        `,
-      });
-    } catch (e) {
-      console.log(`Email failed for ${email}. OTP: ${otp}`);
-    }
+    console.log(`Password reset OTP for ${email}: ${otp}`); // testing
 
-    res.json({ message: "OTP sent successfully", userId: user._id });
+    await sendEmail({
+      to: email,
+      subject: "Password Reset OTP",
+      html: `<h2>Your OTP is ${otp}</h2><p>Valid for 10 minutes</p>`,
+    });
+
+    res.json({ message: "OTP sent", userId: user._id });
   } catch (error) {
     console.error("FORGOT PASSWORD ERROR:", error);
     res.status(500).json({ message: "OTP send failed" });
   }
 };
 
-// ==========================
-// VERIFY USER OTP
-// ==========================
-export const verifyUserOtp = async (req, res) => {
+// VERIFY OTP FOR PASSWORD RESET
+export const verifyOtp = async (req, res) => {
   try {
     const { userId, otp } = req.body;
     const user = await User.findById(userId);
 
-    if (!user || user.resetOtp !== otp || user.resetOtpExpire < Date.now()) {
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.resetOtp !== otp || Date.now() > user.resetOtpExpire)
       return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
 
-    res.json({ message: "OTP verified", token: generateToken(user._id) });
+    res.json({ message: "OTP verified" });
   } catch (error) {
     console.error("VERIFY OTP ERROR:", error);
     res.status(500).json({ message: "OTP verification failed" });
   }
 };
 
-// ==========================
-// RESET USER PASSWORD
-// ==========================
-export const resetUserPassword = async (req, res) => {
+// RESET PASSWORD
+export const resetPassword = async (req, res) => {
   try {
     const { userId, otp, newPassword } = req.body;
     const user = await User.findById(userId);
 
-    if (!user || user.resetOtp !== otp || user.resetOtpExpire < Date.now()) {
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.resetOtp !== otp || Date.now() > user.resetOtpExpire)
       return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
 
     user.password = await bcrypt.hash(newPassword, 10);
-    user.resetOtp = undefined;
-    user.resetOtpExpire = undefined;
+    user.resetOtp = null;
+    user.resetOtpExpire = null;
     await user.save();
 
     res.json({ message: "Password reset successful" });
@@ -141,9 +166,24 @@ export const resetUserPassword = async (req, res) => {
   }
 };
 
+// GET USER PROFILE
+export const getProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("-password -resetOtp -resetOtpExpire");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (error) {
+    console.error("GET PROFILE ERROR:", error);
+    res.status(500).json({ message: "Profile fetch failed" });
+  }
+};
+
 // ==========================
-// ADMIN LOGIN
+// ADMIN CONTROLLERS
 // ==========================
+
+// LOGIN ADMIN
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -164,23 +204,21 @@ export const adminLogin = async (req, res) => {
   }
 };
 
-// ==========================
-// ADMIN FORGOT PASSWORD
-// ==========================
+// FORGOT ADMIN PASSWORD
 export const forgotAdminPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const admin = await Admin.findOne({ email });
     if (!admin) return res.status(404).json({ message: "Admin not found" });
 
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const token = crypto.randomBytes(20).toString("hex");
+    const hashed = crypto.createHash("sha256").update(token).digest("hex");
 
     admin.resetPasswordToken = hashed;
     admin.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
     await admin.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL}/admin/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/admin/reset-password/${token}`;
     await sendEmail({
       to: admin.email,
       subject: "Admin Password Reset",
@@ -194,9 +232,7 @@ export const forgotAdminPassword = async (req, res) => {
   }
 };
 
-// ==========================
 // RESET ADMIN PASSWORD
-// ==========================
 export const resetAdminPassword = async (req, res) => {
   try {
     const { token } = req.params;
@@ -215,16 +251,14 @@ export const resetAdminPassword = async (req, res) => {
     admin.resetPasswordExpire = undefined;
     await admin.save();
 
-    res.json({ message: "Password reset success" });
+    res.json({ message: "Admin password reset successful" });
   } catch (error) {
     console.error("RESET ADMIN PASSWORD ERROR:", error);
     res.status(500).json({ message: "Reset failed" });
   }
 };
 
-// ==========================
 // REGISTER NEW ADMIN (ADMIN ONLY)
-// ==========================
 export const registerAdmin = async (req, res) => {
   try {
     if (!req.admin) return res.status(401).json({ message: "Admin only" });
@@ -243,9 +277,7 @@ export const registerAdmin = async (req, res) => {
   }
 };
 
-// ==========================
 // GET ALL USERS (ADMIN ONLY)
-// ==========================
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select("-password");

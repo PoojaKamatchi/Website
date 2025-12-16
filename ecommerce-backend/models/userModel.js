@@ -8,20 +8,10 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     phone: { type: String },
     role: { type: String, default: "user" },
-    profilePic: { type: String },
-
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      pincode: String,
+    profilePic: {
+      type: String,
+      default: "https://www.w3schools.com/howto/img_avatar.png",
     },
-    location: {
-      lat: Number,
-      lng: Number,
-    },
-
-    // ✅ FOR USER FORGOT PASSWORD (OTP)
     resetOtp: String,
     resetOtpExpire: Date,
   },
