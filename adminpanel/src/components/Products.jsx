@@ -7,6 +7,8 @@ import { ReactTransliterate } from "react-transliterate";
 import "react-toastify/dist/ReactToastify.css";
 import "react-transliterate/dist/index.css";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -23,89 +25,65 @@ const Products = () => {
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
+
   const token = localStorage.getItem("adminToken");
 
-  // Fetch Products
+  // ---------------- FETCH PRODUCTS ----------------
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/products", {
+      const res = await axios.get(`${API_URL}/api/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = Array.isArray(res.data) ? res.data : res.data.products || [];
-      // Normalize product names and categories
-      const normalized = data.map((p) => ({
-        ...p,
-        name: typeof p.name === "string" ? { en: p.name, ta: "" } : p.name,
-        category: p.category?._id ? p.category : p.category || null,
-      }));
-      setProducts(normalized);
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data.products || [];
+
+      setProducts(data);
     } catch (err) {
       console.error(err);
-      toast.error("❌ Failed to load products!");
+      toast.error("Failed to load products");
     }
   };
 
-  // Fetch Categories
+  // ---------------- FETCH CATEGORIES ----------------
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/auth/admin/category", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${API_URL}/api/auth/admin/category`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setCategories(res.data || []);
     } catch (err) {
-      console.error("Error fetching categories:", err);
-      toast.error("❌ Failed to load categories!");
+      console.error(err);
+      toast.error("Failed to load categories");
     }
   };
 
   useEffect(() => {
-    if (!token) {
-      toast.error("❌ Admin token missing! Login required.");
-      return;
-    }
+    if (!token) return toast.error("Admin login required");
     fetchProducts();
     fetchCategories();
   }, []);
 
-  // Handle form change
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "imageFile" && files?.length > 0) {
-      const file = files[0];
-      setFormData((prev) => ({ ...prev, imageFile: file, url: "" }));
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-      if (name === "url") setImagePreview(value);
-    }
-  };
-
-  // Get image source
+  // ---------------- IMAGE SOURCE ----------------
   const getImageSource = (product) => {
-    if (product.url) return product.url;
-    if (product.image?.startsWith("http")) return product.image;
-    if (product.image) return `http://localhost:5000${product.image}`;
-    return "https://via.placeholder.com/200x150?text=No+Image";
+    if (!product?.image) return "https://via.placeholder.com/200";
+    if (product.image.startsWith("http")) return product.image;
+    return `${API_URL}${product.image}`;
   };
 
-  // Get category name
-  const getCategoryName = (category) => {
-    if (!category) return "Unknown";
-    const catId = category._id || category;
-    const found = categories.find((c) => c._id === catId);
-    return found ? `${found.name?.en || "-"} (${found.name?.ta || "-"})` : "Unknown";
-  };
-
-  // Edit product
+  // ---------------- EDIT ----------------
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
       nameEn: product.name?.en || "",
       nameTa: product.name?.ta || "",
-      price: product.price || "",
-      stock: product.stock || "",
-      category: product.category?._id || product.category || "",
+      price: product.price,
+      stock: product.stock,
+      category: product.category?._id || "",
       description: product.description || "",
       url: product.image || "",
       imageFile: null,
@@ -113,9 +91,20 @@ const Products = () => {
     setImagePreview(getImageSource(product));
   };
 
-  // Save product
+  // ---------------- INPUT CHANGE ----------------
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "imageFile" && files?.[0]) {
+      setFormData({ ...formData, imageFile: files[0], url: "" });
+      setImagePreview(URL.createObjectURL(files[0]));
+    } else {
+      setFormData({ ...formData, [name]: value });
+      if (name === "url") setImagePreview(value);
+    }
+  };
+
+  // ---------------- SAVE ----------------
   const handleSave = async () => {
-    if (!editingProduct) return;
     setLoading(true);
     try {
       const data = new FormData();
@@ -123,217 +112,117 @@ const Products = () => {
       data.append("nameTa", formData.nameTa);
       data.append("price", formData.price);
       data.append("stock", formData.stock);
-      data.append("category", formData.category._id || formData.category);
+      data.append("category", formData.category);
       data.append("description", formData.description);
-      data.append("imageUrl", formData.url);
       if (formData.imageFile) data.append("image", formData.imageFile);
+      else if (formData.url) data.append("image", formData.url);
 
       await axios.put(
-        `http://localhost:5000/api/auth/admin/products/${editingProduct._id}`,
+        `${API_URL}/api/auth/admin/products/${editingProduct._id}`,
         data,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success("✅ Product updated successfully!");
+      toast.success("Product updated");
       setEditingProduct(null);
-      await fetchProducts();
+      fetchProducts();
     } catch (err) {
       console.error(err);
-      toast.error("❌ Failed to update product!");
+      toast.error("Update failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete product
+  // ---------------- DELETE ----------------
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
+    if (!window.confirm("Delete product?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/auth/admin/products/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success("🗑️ Product deleted!");
-      await fetchProducts();
-    } catch (err) {
-      console.error(err);
-      toast.error("❌ Failed to delete product!");
+      await axios.delete(
+        `${API_URL}/api/auth/admin/products/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Deleted");
+      fetchProducts();
+    } catch {
+      toast.error("Delete failed");
     }
   };
 
   return (
-    <div className="p-10 min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200">
-      <ToastContainer position="top-center" autoClose={2000} />
-      <h1 className="text-4xl font-extrabold text-center text-indigo-800 mb-10">
-        🛍️ Product List
-      </h1>
+    <div className="p-10 bg-gray-100 min-h-screen">
+      <ToastContainer />
+      <h1 className="text-3xl font-bold text-center mb-8">Products</h1>
 
-      {products.length === 0 ? (
-        <p className="text-center text-gray-600 text-lg">No products yet!</p>
-      ) : (
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <motion.div
-              key={product._id}
-              className="bg-white text-gray-800 p-5 rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-transform border border-indigo-200"
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <img
-                src={getImageSource(product)}
-                alt={typeof product.name === "object" ? product.name.en : product.name}
-                className="rounded-xl h-40 w-full object-cover mb-3 border border-gray-300"
-              />
-              <h2 className="font-bold text-lg">
-                {typeof product.name === "object" ? product.name.en : product.name}{" "}
-                <span className="text-indigo-600 text-sm font-semibold">
-                  ({typeof product.name === "object" ? product.name.ta : "-"})
-                </span>
-              </h2>
-              <p className="text-sm text-gray-600">
-                Category:{" "}
-                <span className="font-semibold text-gray-900">
-                  {getCategoryName(product.category)}
-                </span>
-              </p>
-              <p>💰 Price: ₹{product.price}</p>
-              <p className="font-semibold text-gray-900">
-                📦 Stock:{" "}
-                <span
-                  className={`${
-                    product.stock <= 5
-                      ? "text-red-500"
-                      : product.stock <= 10
-                      ? "text-yellow-500"
-                      : "text-green-600"
-                  }`}
-                >
-                  {product.stock}
-                </span>
-              </p>
-              {product.description && (
-                <p className="text-gray-700 mt-2 text-sm italic">{product.description}</p>
-              )}
-              <div className="flex justify-between mt-4">
-                <button
-                  onClick={() => handleEdit(product)}
-                  className="bg-yellow-400 text-black px-3 py-1 rounded-lg hover:bg-yellow-500"
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(product._id)}
-                  className="bg-red-600 px-3 py-1 rounded-lg text-white hover:bg-red-700"
-                >
-                  🗑️ Delete
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {editingProduct && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {products.map((p) => (
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl"
+            key={p._id}
+            className="bg-white p-4 rounded-xl shadow"
+            whileHover={{ scale: 1.05 }}
           >
-            <h2 className="text-2xl font-bold text-indigo-700 mb-4">✏️ Edit Product</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="nameEn"
-                value={formData.nameEn}
-                onChange={handleChange}
-                placeholder="Product Name (English)"
-                className="w-full border rounded-lg p-2"
-              />
-              <ReactTransliterate
-                value={formData.nameTa}
-                onChangeText={(text) =>
-                  setFormData((prev) => ({ ...prev, nameTa: text }))
-                }
-                lang="ta"
-                placeholder="பொருள் பெயர் (தமிழ்)"
-                className="w-full border rounded-lg p-2"
-              />
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Product Description"
-                className="w-full border rounded-lg p-2 h-24 resize-none"
-              />
-              <input
-                type="text"
-                name="url"
-                value={formData.url}
-                onChange={handleChange}
-                placeholder="Paste Image URL"
-                className="w-full border rounded-lg p-2"
-              />
-              <input
-                type="file"
-                name="imageFile"
-                accept="image/*"
-                onChange={handleChange}
-                className="w-full border p-2 rounded-lg"
-              />
-              {imagePreview && (
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="h-32 w-32 mt-3 rounded-lg object-cover border"
-                />
-              )}
-              <select
-                name="category"
-                value={formData.category._id || formData.category || ""}
-                onChange={handleChange}
-                className="w-full border rounded-lg p-2"
+            <img
+              src={getImageSource(p)}
+              className="h-40 w-full object-cover rounded"
+            />
+            <h2 className="font-bold mt-2">{p.name?.en}</h2>
+            <p>₹{p.price}</p>
+            <div className="flex justify-between mt-3">
+              <button
+                onClick={() => handleEdit(p)}
+                className="bg-yellow-400 px-3 py-1 rounded"
               >
-                <option value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>
-                    {cat.name?.en} / {cat.name?.ta || ""}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="Price (₹)"
-                className="w-full border rounded-lg p-2"
-              />
-              <input
-                type="number"
-                name="stock"
-                value={formData.stock}
-                onChange={handleChange}
-                placeholder="Stock"
-                className="w-full border rounded-lg p-2"
-              />
-              <div className="flex justify-end gap-3 mt-4">
-                <button
-                  onClick={() => setEditingProduct(null)}
-                  className="px-4 py-2 bg-gray-400 text-white rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {loading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(p._id)}
+                className="bg-red-600 text-white px-3 py-1 rounded"
+              >
+                Delete
+              </button>
             </div>
           </motion.div>
+        ))}
+      </div>
+
+      {/* EDIT MODAL */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-xl w-full max-w-lg">
+            <input
+              name="nameEn"
+              value={formData.nameEn}
+              onChange={handleChange}
+              placeholder="English Name"
+              className="border p-2 w-full mb-2"
+            />
+            <ReactTransliterate
+              value={formData.nameTa}
+              onChangeText={(t) =>
+                setFormData({ ...formData, nameTa: t })
+              }
+              lang="ta"
+              className="border p-2 w-full mb-2"
+            />
+            <input
+              type="file"
+              name="imageFile"
+              onChange={handleChange}
+              className="mb-2"
+            />
+            {imagePreview && (
+              <img
+                src={imagePreview}
+                className="h-32 w-32 object-cover mb-2"
+              />
+            )}
+            <button
+              onClick={handleSave}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              {loading ? "Saving..." : "Save"}
+            </button>
+          </div>
         </div>
       )}
     </div>
