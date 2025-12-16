@@ -3,9 +3,10 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function OrdersPage() {
+const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
@@ -27,21 +28,20 @@ export default function OrdersPage() {
     fetchOrders();
   }, []);
 
-  const handleCancelOrder = async (orderId) => {
+  const cancelOrder = async (id) => {
     try {
       const token = localStorage.getItem("authToken");
       await axios.put(
-        `${API_URL}/api/orders/${orderId}/cancel`,
+        `${API_URL}/api/orders/${id}/cancel`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Order cancelled!");
       setOrders((prev) =>
-        prev.map((o) => (o._id === orderId ? { ...o, status: "Cancelled" } : o))
+        prev.map((o) => (o._id === id ? { ...o, status: "Cancelled" } : o))
       );
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to cancel order.");
+    } catch {
+      toast.error("Failed to cancel order");
     }
   };
 
@@ -71,13 +71,13 @@ export default function OrdersPage() {
       <h1 className="text-3xl font-bold text-center text-indigo-700 mb-8">My Orders</h1>
 
       <div className="max-w-5xl mx-auto space-y-6">
-        {orders.map((order, index) => (
+        {orders.map((order, i) => (
           <div
-            key={order._id || index}
+            key={order._id || i}
             className="bg-white shadow-lg rounded-xl p-6 border border-indigo-100 hover:shadow-xl transition duration-300"
           >
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold text-indigo-700">Order #{index + 1}</h2>
+              <h2 className="text-xl font-semibold text-indigo-700">Order #{i + 1}</h2>
               <span
                 className={`px-3 py-1 rounded-lg text-sm font-medium ${
                   order.status === "Delivered"
@@ -91,14 +91,14 @@ export default function OrdersPage() {
               </span>
             </div>
 
-            <p className="text-gray-600 mb-1"><strong>Name:</strong> {order.name}</p>
-            <p className="text-gray-600 mb-1"><strong>Mobile:</strong> {order.mobile}</p>
-            <p className="text-gray-600 mb-3"><strong>Address:</strong> {order.shippingAddress}</p>
+            <p className="text-gray-600 mb-1"><b>Name:</b> {order.name}</p>
+            <p className="text-gray-600 mb-1"><b>Mobile:</b> {order.mobile}</p>
+            <p className="text-gray-600 mb-3"><b>Address:</b> {order.shippingAddress}</p>
 
             <div className="border-t border-gray-200 mt-3 pt-3">
               <h3 className="text-lg font-medium text-gray-800 mb-2">Items:</h3>
-              {order.orderItems?.map((item, i) => (
-                <div key={i} className="flex justify-between text-gray-700 border-b border-gray-100 py-1">
+              {order.orderItems?.map((item, j) => (
+                <div key={j} className="flex justify-between text-gray-700 border-b border-gray-100 py-1">
                   <span>{item.name || "Unnamed Product"}</span>
                   <span>₹ {item.price} × {item.quantity}</span>
                 </div>
@@ -126,7 +126,7 @@ export default function OrdersPage() {
 
             {order.status === "Processing" && (
               <button
-                onClick={() => handleCancelOrder(order._id)}
+                onClick={() => cancelOrder(order._id)}
                 className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
               >
                 Cancel Order
@@ -137,4 +137,6 @@ export default function OrdersPage() {
       </div>
     </div>
   );
-}
+};
+
+export default OrdersPage;

@@ -84,7 +84,7 @@ export default function OrderSuccessPage() {
         <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-6 text-left space-y-2">
           <p><strong>Order ID:</strong> {order._id}</p>
           <p><strong>Amount Paid:</strong> ₹ {order.totalAmount}</p>
-          <p><strong>Payment Method:</strong> {order.paymentMethod || "COD"}</p>
+          <p><strong>Payment Method:</strong> {order.paymentMethod || "UPI"}</p>
           <p><strong>Status:</strong> {order.status || "Processing"}</p>
           <p><strong>Delivery Address:</strong> {order.shippingAddress}</p>
           <p><strong>Ordered On:</strong> {new Date(order.createdAt).toLocaleString()}</p>

@@ -3,16 +3,12 @@ import { CartProvider } from "./components/CartContext.jsx";
 import { WishlistProvider } from "./components/WishlistContext.jsx";
 
 // Components
-import Navbar from "./components/Navbar.jsx";
-import Footer from "./components/Footer.jsx";
-
-// Pages
+import Layout from "./components/Navbar.jsx"; // <-- updated Layout
 import Home from "./pages/Home.jsx";
-
 import Cart from "./pages/Cart.jsx";
 import CategoryPage from "./pages/CategoryPage.jsx";
 import ProductPage from "./pages/ProductPage.jsx";
-import SingleProductPage from "./components/SingleProductPage.jsx"; // <-- NEW
+import SingleProductPage from "./components/SingleProductPage.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import CheckoutPage from "./pages/CheckoutPage.jsx";
@@ -29,19 +25,6 @@ import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
 import ContactPage from "./pages/Contact.jsx";
 
-function Layout({ children }) {
-  const location = useLocation();
-  const hideNavbarFooter = ["/login", "/register"].includes(location.pathname);
-
-  return (
-    <>
-      {!hideNavbarFooter && <Navbar />}
-      {children}
-      {!hideNavbarFooter && <Footer />}
-    </>
-  );
-}
-
 export default function App() {
   return (
     <CartProvider>
@@ -52,7 +35,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/categories" element={<CategoryPage />} />
               <Route path="/category/:id" element={<ProductPage />} />
-              <Route path="/product/:id" element={<SingleProductPage />} /> {/* <-- NEW */}
+              <Route path="/product/:id" element={<SingleProductPage />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/payment/:orderId" element={<PaymentPage />} />
@@ -68,8 +51,7 @@ export default function App() {
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/contact" element={<ContactPage />} />
-
+              <Route path="/contact" element={<ContactPage />} />
             </Routes>
           </Layout>
         </Router>
