@@ -7,49 +7,31 @@ const orderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
-    name: String,
-    mobile: String,
-
+    name: { type: String, required: true },
+    mobile: { type: String, required: true },
     orderItems: [
       {
-        productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-        name: String,
-        price: Number,
-        quantity: Number,
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" }, // optional reference
       },
     ],
-
-    shippingAddress: String,
-    totalAmount: Number,
-
-    paymentMethod: {
-      type: String,
-      default: "UPI",
-    },
-
+    shippingAddress: { type: String, required: true },
+    totalAmount: { type: Number, required: true },
+    paymentMethod: { type: String, default: "UPI" },
     paymentStatus: {
       type: String,
       enum: ["Pending", "Approved", "Rejected"],
       default: "Pending",
     },
-
-    paymentScreenshot: {
-      type: String,
-      default: "",
-    },
-
+    paymentScreenshot: { type: String, required: true },
     orderStatus: {
       type: String,
       enum: ["Processing", "Shipped", "Delivered", "Cancelled"],
       default: "Processing",
     },
-
-    cancelledBy: {
-      type: String,
-      enum: ["USER", "ADMIN"],
-      default: null,
-    },
+    cancelledBy: String,
   },
   { timestamps: true }
 );
