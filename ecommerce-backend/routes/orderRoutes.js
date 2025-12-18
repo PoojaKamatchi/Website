@@ -1,23 +1,27 @@
 import express from "express";
+import { protect, adminProtect } from "../middleware/authMiddleware.js";
+import upload from "../middleware/upload.js";
 import {
   createOrder,
   getUserOrders,
+  cancelOrderByUser,
   getAllOrders,
   updateOrderStatus,
   updatePaymentStatus,
-  cancelOrderByUser,
 } from "../controllers/orderController.js";
-
-import { protect, adminProtect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/* USER */
-router.post("/", protect, createOrder);
-router.get("/my-orders", protect, getUserOrders);
-router.put("/cancel/:id", protect, cancelOrderByUser);
+router.post(
+  "/create",
+  protect,
+  upload.single("paymentScreenshot"),
+  createOrder
+);
 
-/* ADMIN */
+router.get("/user", protect, getUserOrders);
+router.put("/:id/cancel", protect, cancelOrderByUser);
+
 router.get("/all", adminProtect, getAllOrders);
 router.put("/status/:id", adminProtect, updateOrderStatus);
 router.put("/payment/:id", adminProtect, updatePaymentStatus);

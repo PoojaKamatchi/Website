@@ -1,7 +1,5 @@
-// =========================
-// ✅ server.js
-// =========================
 
+// server.js
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -27,128 +25,43 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import offerRoutes from "./routes/offerRoutes.js";
 
-// =========================
-// ✅ ENV + DB
-// =========================
 dotenv.config();
 connectDB();
 
-// =========================
-// ✅ APP SETUP
-// =========================
 const app = express();
 const server = http.createServer(app);
 
-// =========================
-// ✅ CORS CONFIG (FIXED)
-// =========================
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow Postman, curl, mobile apps
-      if (!origin) return callback(null, true);
+/* CORS */
+app.use(cors({ origin: true, credentials: true }));
 
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://vite-project-awha.onrender.com",
-       "https://adminpanel-7pn1.onrender.com",
-
-      ];
-
-      // Allow Render frontend domains
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".onrender.com")
-      ) {
-        return callback(null, true);
-      }
-
-      console.log("🚫 CORS blocked:", origin);
-      return callback(null, false); // ❗ DO NOT throw error
-    },
-    credentials: true,
-  })
-);
-
-// =========================
-// ✅ SOCKET.IO
-// =========================
-const io = new Server(server, {
-  cors: {
-    origin: true,
-    credentials: true,
-  },
-});
-app.set("socketio", io);
-
-// =========================
-// ✅ MIDDLEWARES
-// =========================
+/* Middleware */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// =========================
-// ✅ STATIC FILES
-// =========================
+/* Static */
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// =========================
-// ✅ ROOT TEST
-// =========================
-app.get("/", (req, res) => {
-  res.send("✅ API is running successfully...");
-});
-
-// =========================
-// ✅ ROUTES
-// =========================
-
-// Auth
+/* Routes */
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", adminRoutes);
-
-// Users & Products
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
-
-// Cart & Orders
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
-
-// Admin
+app.use("/api/categories", categoryRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api", contactRoutes);
+app.use("/api/offers", offerRoutes);
 app.use("/api/auth/admin/products", adminProductRoutes);
 app.use("/api/auth/admin/category", adminCategoryRoutes);
 
-// Customer
-app.use("/api/categories", categoryRoutes);
-app.use("/api/wishlist", wishlistRoutes);
-
-// Others
-app.use("/api", contactRoutes);
-app.use("/api/offers", offerRoutes);
-
-// =========================
-// ✅ ERROR HANDLING
-// =========================
+/* Errors */
 app.use(notFound);
 app.use(errorHandler);
 
-// =========================
-// ✅ SOCKET EVENTS
-// =========================
-io.on("connection", (socket) => {
-  console.log("🟢 Client connected:", socket.id);
-  socket.on("disconnect", () => {
-    console.log("🔴 Client disconnected:", socket.id);
-  });
-});
-
-// =========================
-// ✅ START SERVER
-// =========================
+/* Server */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
