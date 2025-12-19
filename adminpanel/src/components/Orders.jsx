@@ -67,6 +67,7 @@ const Orders = () => {
         Admin Orders Dashboard
       </h1>
 
+      {/* FILTER */}
       <div className="flex justify-center gap-3 mb-6">
         {["All", "Processing", "Shipped", "Delivered", "Cancelled"].map((s) => (
           <button
@@ -83,15 +84,14 @@ const Orders = () => {
         ))}
       </div>
 
+      {/* ORDERS */}
       {filteredOrders.map((order) => {
         const imageUrl = order.paymentScreenshot
-          ? order.paymentScreenshot.startsWith("http")
-            ? order.paymentScreenshot
-            : `${API_URL}${order.paymentScreenshot}`
+          ? `${API_URL}${order.paymentScreenshot}`
           : null;
 
         return (
-          <div key={order._id} className="bg-white p-6 mb-5 rounded shadow">
+          <div key={order._id} className="bg-white p-6 mb-6 rounded shadow">
             <p><b>Order ID:</b> {order._id}</p>
             <p><b>User:</b> {order.user?.name}</p>
             <p><b>Email:</b> {order.user?.email}</p>
@@ -101,10 +101,34 @@ const Orders = () => {
               Ordered On: {new Date(order.createdAt).toLocaleString("en-IN")}
             </p>
 
-            <p className="mt-1"><b>Total:</b> ₹{order.totalAmount}</p>
-            <p><b>Payment Status:</b> {order.paymentStatus}</p>
+            {/* PRODUCTS */}
+            <div className="mt-4">
+              <p className="font-semibold mb-2">Ordered Items:</p>
+              {order.orderItems?.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex justify-between border-b py-1 text-sm"
+                >
+                  <span>{item.name}</span>
+                  <span>
+                    ₹{item.price} × {item.quantity}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-            {/* ✅ SCREENSHOT */}
+            <p className="mt-3 font-bold text-lg">
+              Total: ₹{order.totalAmount}
+            </p>
+
+            <p>
+              <b>Payment Status:</b>{" "}
+              <span className="text-blue-700">
+                {order.paymentStatus}
+              </span>
+            </p>
+
+            {/* SCREENSHOT */}
             {imageUrl && (
               <div className="mt-3">
                 <p className="font-semibold mb-1">UPI Screenshot:</p>
@@ -117,6 +141,7 @@ const Orders = () => {
               </div>
             )}
 
+            {/* ACTIONS */}
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => updatePayment(order._id, "Approved")}
