@@ -27,7 +27,7 @@ export const createOrder = async (req, res) => {
 
       if (product.stock < item.quantity) {
         return res.status(400).json({
-          message: `${product.name.en} out of stock`,
+          message: `${product.name?.en || product.name} out of stock`,
         });
       }
 
@@ -35,7 +35,7 @@ export const createOrder = async (req, res) => {
       await product.save();
 
       orderItems.push({
-        name: product.name.en,
+        name: product.name?.en || product.name,
         quantity: item.quantity,
         price: product.price,
         productId: product._id,
@@ -50,71 +50,122 @@ export const createOrder = async (req, res) => {
       orderItems,
       totalAmount: req.body.totalAmount,
       paymentMethod: "UPI",
+      paymentStatus: "Pending",
+      orderStatus: "Processing",
       paymentScreenshot: `/uploads/${req.file.filename}`,
     });
 
+    // ✅ SEND MAIL TO ADMIN
     await sendOrderNotification(order);
 
     res.status(201).json(order);
   } catch (err) {
+    console.error("Create Order Error:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 /* ================= USER ORDERS ================= */
 export const getUserOrders = async (req, res) => {
-  const orders = await Order.find({ user: req.user._id }).sort({
-    createdAt: -1,
-  });
-  res.json(orders);
+  try {
+    const orders = await Order.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 /* ================= GET ORDER BY ID ================= */
 export const getOrderById = async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  if (!order) return res.status(404).json({ message: "Order not found" });
+  try {
+    const order = await Order.findById(req.params.id).populate(
+      "user",
+      "name email"
+    );
 
-  if (order.user.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ message: "Unauthorized" });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // ✅ allow admin OR owner
+    if (
+      order.user._id.toString() !== req.user._id.toString() &&
+      !req.user.isAdmin
+    ) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  res.json(order);
 };
 
 /* ================= CANCEL ORDER ================= */
 export const cancelOrderByUser = async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  if (!order) return res.status(404).json({ message: "Order not found" });
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
 
-  if (order.orderStatus !== "Processing") {
-    return res.status(400).json({ message: "Cannot cancel" });
+    if (order.orderStatus !== "Processing") {
+      return res.status(400).json({ message: "Cannot cancel this order" });
+    }
+
+    order.orderStatus = "Cancelled";
+    order.cancelledBy = "USER";
+    await order.save();
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
-  order.orderStatus = "Cancelled";
-  order.cancelledBy = "USER";
-  await order.save();
-
-  res.json(order);
 };
 
 /* ================= ADMIN ================= */
 export const getAllOrders = async (req, res) => {
-  const orders = await Order.find()
-    .populate("user", "name email")
-    .sort({ createdAt: -1 });
-  res.json(orders);
+  try {
+    const orders = await Order.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
+
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const updateOrderStatus = async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  order.orderStatus = req.body.status;
-  await order.save();
-  res.json(order);
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    order.orderStatus = req.body.status;
+    await order.save();
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const updatePaymentStatus = async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  order.paymentStatus = req.body.paymentStatus;
-  await order.save();
-  res.json(order);
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    order.paymentStatus = req.body.paymentStatus;
+    await order.save();
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

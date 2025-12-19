@@ -8,6 +8,7 @@ import {
   getAllOrders,
   updateOrderStatus,
   updatePaymentStatus,
+  getOrderById, // ✅ ADD THIS
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -20,6 +21,10 @@ router.post(
 );
 
 router.get("/user", protect, getUserOrders);
+
+// ✅ THIS ROUTE WAS MISSING (CRITICAL)
+router.get("/:id", protect, getOrderById);
+
 router.put("/:id/cancel", protect, cancelOrderByUser);
 
 router.get("/all", adminProtect, getAllOrders);
