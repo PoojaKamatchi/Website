@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 export const sendOrderNotification = async (order) => {
   try {
     const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE,
+      service: process.env.EMAIL_SERVICE, // e.g., "gmail"
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -11,9 +11,7 @@ export const sendOrderNotification = async (order) => {
     });
 
     const itemsHtml = order.orderItems
-      .map(
-        (i) => `<li>${i.name} × ${i.quantity} — ₹${i.price}</li>`
-      )
+      .map((i) => `<li>${i.name} × ${i.quantity} — ₹${i.price}</li>`)
       .join("");
 
     await transporter.sendMail({
@@ -27,8 +25,16 @@ export const sendOrderNotification = async (order) => {
         <p><b>Address:</b> ${order.shippingAddress}</p>
         <ul>${itemsHtml}</ul>
         <h3>Total: ₹${order.totalAmount}</h3>
+        ${
+          order.paymentScreenshot
+            ? `<p><b>Payment Screenshot:</b></p>
+               <img src="${order.paymentScreenshot}" alt="Payment Screenshot" width="300"/>`
+            : ""
+        }
       `,
     });
+
+    console.log("✅ Order notification sent!");
   } catch (err) {
     console.error("Mail error:", err.message);
   }
