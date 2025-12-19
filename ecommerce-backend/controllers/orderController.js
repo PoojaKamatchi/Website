@@ -1,13 +1,12 @@
 import Order from "../models/orderModel.js";
+import Product from "../models/productModel.js";
 
-/* ================= CREATE ORDER ================= */
 export const createOrder = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Payment screenshot required" });
     }
 
-    // Parse order items safely
     let items;
     try {
       items = JSON.parse(req.body.orderItems);
@@ -16,13 +15,31 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid order items" });
     }
 
+    // ✅ REDUCE STOCK ONLY HERE
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          message: `${product.name} out of stock`,
+        });
+      }
+
+      product.stock -= item.quantity;
+      await product.save();
+    }
+
     const order = await Order.create({
       user: req.user._id,
       name: req.body.name,
       mobile: req.body.mobile,
-      orderItems: items,
       shippingAddress: req.body.shippingAddress,
+      orderItems: items,
       totalAmount: req.body.totalAmount,
+      paymentMethod: "UPI",
       paymentScreenshot: `/uploads/${req.file.filename}`,
     });
 
@@ -101,4 +118,15 @@ export const updatePaymentStatus = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};export const getOrderById = async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) return res.status(404).json({ message: "Order not found" });
+
+  if (order.user.toString() !== req.user._id.toString()) {
+    return res.status(403).json({ message: "Unauthorized" });
+  }
+
+  res.json(order);
 };
+
+
