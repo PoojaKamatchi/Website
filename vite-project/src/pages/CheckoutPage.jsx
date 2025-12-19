@@ -37,41 +37,48 @@ export default function CheckoutPage() {
 
   const handleFileChange = (e) => setScreenshot(e.target.files[0]);
 
-  const handlePlaceOrder = async () => {
-    if (!cartItems.length) return toast.error("Your cart is empty!");
-    if (!name || !mobile || !address) return toast.warn("Please fill all fields.");
-    if (!screenshot) return toast.warn("Please upload payment screenshot!");
+ const handlePlaceOrder = async () => {
+  if (!screenshot) return toast.warn("Upload payment screenshot");
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("authToken");
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("authToken");
 
-      const orderData = {
-        cartItems: cartItems.map((item) => ({
-          productId: item.product?._id,
-          name: item.product?.name || "Unnamed Product",
-          price: item.product?.price || 0,
-          quantity: item.quantity || 1,
-        })),
-        name,
-        mobile,
-        address,
-        totalAmount: finalAmount,
-        paymentMethod: "UPI",
-      };
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("mobile", mobile);
+    formData.append("shippingAddress", address);
+    formData.append("totalAmount", finalAmount);
+    formData.append("orderItems", JSON.stringify(
+      cartItems.map(item => ({
+        productId: item.product._id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+      }))
+    ));
+    formData.append("paymentScreenshot", screenshot);
 
-      const res = await axios.post(`${API_URL}/api/orders/create`, orderData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const res = await axios.post(
+      `${API_URL}/api/orders/create`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
 
-      await clearCart();
-      navigate(`/order-success/${res.data.order._id}`);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Order failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    await clearCart();
+    navigate(`/order-success/${res.data._id}`);
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Order failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 md:px-16">
