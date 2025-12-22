@@ -6,7 +6,8 @@ export default function Contact() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/contact");
+        // Use environment variable here
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/contact`);
         const data = await res.json();
         setInfo(data);
       } catch (error) {
