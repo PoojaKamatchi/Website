@@ -1,4 +1,3 @@
-
 // server.js
 import express from "express";
 import dotenv from "dotenv";
@@ -6,7 +5,6 @@ import cors from "cors";
 import path from "path";
 import cookieParser from "cookie-parser";
 import http from "http";
-import { Server } from "socket.io";
 
 import connectDB from "./config/db.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
@@ -31,19 +29,21 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-/* CORS */
+/* ================= CORS ================= */
 app.use(cors({ origin: true, credentials: true }));
 
-/* Middleware */
+/* ================= Middleware ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-/* Static */
+/* ================= Static ================= */
 const __dirname = path.resolve();
+
+// uploaded images
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-/* Routes */
+/* ================= API Routes ================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", adminRoutes);
 app.use("/api/users", userRoutes);
@@ -57,11 +57,21 @@ app.use("/api/offers", offerRoutes);
 app.use("/api/auth/admin/products", adminProductRoutes);
 app.use("/api/auth/admin/category", adminCategoryRoutes);
 
-/* Errors */
+/* ================= FRONTEND SERVE ================= */
+const frontendPath = path.join(__dirname, "frontend", "dist");
+
+app.use(express.static(frontendPath));
+
+/* ✅ FIXED REACT ROUTER RELOAD */
+app.use((req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
+
+/* ================= Errors ================= */
 app.use(notFound);
 app.use(errorHandler);
 
-/* Server */
+/* ================= Server ================= */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

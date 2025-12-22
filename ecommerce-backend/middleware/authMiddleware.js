@@ -32,7 +32,11 @@ export const protect = async (req, res, next) => {
   }
 };
 
+
+
 /* ===================== ADMIN PROTECT ===================== */
+
+// ✅ Admin authentication middleware
 export const adminProtect = async (req, res, next) => {
   let token;
   try {
@@ -42,10 +46,8 @@ export const adminProtect = async (req, res, next) => {
     ) {
       token = req.headers.authorization.split(" ")[1];
 
-      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Find admin
       const admin = await Admin.findById(decoded.id).select("-password");
       if (!admin) {
         return res.status(401).json({ message: "Admin not found" });
@@ -58,14 +60,15 @@ export const adminProtect = async (req, res, next) => {
     }
   } catch (error) {
     console.error("Admin Auth Error:", error.message);
-    res.status(401).json({ message: "Not authorized, token failed" });
+    return res.status(401).json({ message: "Not authorized, token failed" });
   }
 };
 
+
 /* ===================== OPTIONAL: ROLE CHECK ===================== */
-// Use in routes if you want to allow only admin or user
+// Use in routes if you want to allow only admin
 export const authorizeRoles = (...roles) => (req, res, next) => {
-  if (roles.includes(req.admin?.role || req.user?.role)) {
+  if (roles.includes(req.admin?.role)) {
     return next();
   }
   return res.status(403).json({ message: "Forbidden: insufficient role" });
