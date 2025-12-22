@@ -85,21 +85,20 @@ export default function OrderSuccessPage() {
           <p><strong>Order ID:</strong> {order._id}</p>
           <p><strong>Amount Paid:</strong> ₹ {order.totalAmount}</p>
           <p><strong>Payment Method:</strong> {order.paymentMethod || "UPI"}</p>
-          <p><strong>Status:</strong> {order.status || "Processing"}</p>
+         <p><strong>Status:</strong> {order.orderStatus}</p>
+
           <p><strong>Delivery Address:</strong> {order.shippingAddress}</p>
           <p><strong>Ordered On:</strong> {new Date(order.createdAt).toLocaleString()}</p>
         </div>
 
         {/* QR code for UPI */}
-        {order.paymentMethod === "UPI" && (
-          <div className="mb-6 flex flex-col items-center">
-            <p className="mb-2 font-medium text-gray-700">Scan QR to pay:</p>
-            <QRCodeSVG
-              value={`upi://pay?pa=poojamuralipooja248@oksbi&pn=Pooja&am=${order.totalAmount}&cu=INR`}
-              size={160}
-            />
-          </div>
-        )}
+        {order.paymentScreenshot && (
+  <div className="mb-6">
+    <p className="font-medium text-gray-700 mb-2">Payment Screenshot:</p>
+    <img src={order.paymentScreenshot} alt="Payment" className="mx-auto max-h-60 rounded-md" />
+  </div>
+)}
+
 
         {/* Items Ordered */}
         <div className="mb-6 text-left">
