@@ -32,7 +32,7 @@ const server = http.createServer(app);
 /* ================= CORS (ADMIN + USER) ================= */
 const allowedOrigins = [
   "https://lifegain-in.onrender.com",      // User
-  "https://lifegain-admin.onrender.com"    // Admin
+  "https://adminpanel-7pn1.onrender.com"    // Admin
 ];
 
 app.use(
