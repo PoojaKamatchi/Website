@@ -29,10 +29,22 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-/* ================= CORS (ONLY ONE ORIGIN) ================= */
+/* ================= CORS (ADMIN + USER) ================= */
+const allowedOrigins = [
+  "https://lifegain-in.onrender.com",      // User
+  "https://lifegain-admin.onrender.com"    // Admin
+];
+
 app.use(
   cors({
-    origin: "https://lifegain-in.onrender.com",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // Postman / server
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
     credentials: true,
   })
 );
@@ -44,8 +56,6 @@ app.use(cookieParser());
 
 /* ================= Static ================= */
 const __dirname = path.resolve();
-
-// Uploaded images
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* ================= API Routes ================= */
@@ -64,11 +74,13 @@ app.use("/api/offers", offerRoutes);
 app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/admin/category", adminCategoryRoutes);
 
-/* ================= FRONTEND SERVE ================= */
+/* ================= FRONTEND SERVE (optional) ================= */
+// ⚠️ Use this ONLY if backend hosts frontend
+// Otherwise REMOVE this entire block in Render
+
 const frontendPath = path.join(__dirname, "frontend", "dist");
 app.use(express.static(frontendPath));
 
-/* ✅ React Router Fix */
 app.use((req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
