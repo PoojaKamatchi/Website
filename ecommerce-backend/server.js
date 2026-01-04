@@ -29,8 +29,13 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-/* ================= CORS ================= */
-app.use(cors({ origin: true, credentials: true }));
+/* ================= CORS (ONLY ONE ORIGIN) ================= */
+app.use(
+  cors({
+    origin: "https://lifegain-in.onrender.com",
+    credentials: true,
+  })
+);
 
 /* ================= Middleware ================= */
 app.use(express.json());
@@ -40,29 +45,30 @@ app.use(cookieParser());
 /* ================= Static ================= */
 const __dirname = path.resolve();
 
-// uploaded images
+// Uploaded images
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* ================= API Routes ================= */
 app.use("/api/auth", authRoutes);
-app.use("/api/auth", adminRoutes);
+app.use("/api/admin", adminRoutes);
+
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/wishlist", wishlistRoutes);
-app.use("/api", contactRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/api/offers", offerRoutes);
-app.use("/api/auth/admin/products", adminProductRoutes);
-app.use("/api/auth/admin/category", adminCategoryRoutes);
+
+app.use("/api/admin/products", adminProductRoutes);
+app.use("/api/admin/category", adminCategoryRoutes);
 
 /* ================= FRONTEND SERVE ================= */
 const frontendPath = path.join(__dirname, "frontend", "dist");
-
 app.use(express.static(frontendPath));
 
-/* ✅ FIXED REACT ROUTER RELOAD */
+/* ✅ React Router Fix */
 app.use((req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
