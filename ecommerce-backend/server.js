@@ -44,7 +44,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow Postman, mobile apps
+      if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -85,15 +85,22 @@ app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/admin/categories", adminCategoryRoutes);
 
 /* ================= FRONTEND SERVE ================= */
-const frontendPath = path.join(__dirname, "frontend", "build"); // React default build folder
+const frontendPath = path.join(__dirname, "frontend", "build");
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(frontendPath));
 
-  // Catch-all for React Router
-  app.get("*", (req, res) => {
+  // Serve only index.html explicitly (React app)  
+  app.get("/", (req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
+  app.get("/about", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+  app.get("/contact", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+  // Add other frontend paths manually if needed
 } else {
   app.get("/", (req, res) => {
     res.send("API running...");
