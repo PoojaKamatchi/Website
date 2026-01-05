@@ -83,15 +83,11 @@ app.use("/api/auth/admin/products", adminProductRoutes);
 app.use("/api/auth/admin/category", adminCategoryRoutes);
 
 /* ================= FRONTEND SERVE ================= */
+/* ================= FRONTEND SERVE ================= */
 const frontendPath = path.join(__dirname, "frontend", "dist");
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(frontendPath));
-
-  // React Router Reload Fix
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
 } else {
   app.get("/", (req, res) => {
     res.send("API running...");
