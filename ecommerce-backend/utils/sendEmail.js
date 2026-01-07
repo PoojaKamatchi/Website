@@ -1,33 +1,38 @@
 import nodemailer from "nodemailer";
+import { google } from "googleapis";
 
-/**
- * SAFE EMAIL SENDER
- * - Will NOT throw error
- * - Will NOT break API
- * - Logs failure clearly
- * - Allows OTP flow to continue
- */
+const OAuth2 = google.auth.OAuth2;
+
+const createTransporter = async () => {
+  const oauth2Client = new OAuth2(
+    process.env.CLIENT_ID,
+    process.env.CLIENT_SECRET,
+    "https://developers.google.com/oauthplayground"
+  );
+
+  oauth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
+
+  const accessToken = await oauth2Client.getAccessToken();
+
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: process.env.EMAIL_USER,
+      clientId: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      refreshToken: process.env.REFRESH_TOKEN,
+      accessToken: accessToken.token,
+    },
+  });
+};
+
 const sendEmail = async ({ to, subject, otp, userName }) => {
   try {
-    // ENV CHECK
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Email ENV missing — skipping email send");
-      return true;
-    }
+    const transporter = await createTransporter();
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      connectionTimeout: 10000, // 10s
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    });
-
-    const mailOptions = {
-      from: `"Life Gain" <${process.env.EMAIL_USER}>`,
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
       to,
       subject,
       html: `
@@ -40,14 +45,12 @@ const sendEmail = async ({ to, subject, otp, userName }) => {
           <p>Life Gain Team</p>
         </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ OTP email sent to ${to}`);
+    console.log("✅ Email sent to", to);
     return true;
-  } catch (error) {
-    // 🔴 DO NOT THROW
-    console.error("❌ Email send skipped:", error.message);
+  } catch (err) {
+    console.error("❌ Email sending failed:", err.message);
     return false;
   }
 };
