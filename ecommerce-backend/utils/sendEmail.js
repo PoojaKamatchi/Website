@@ -16,13 +16,13 @@ const sendEmail = async ({ to, subject, otp, userName }) => {
     <div style="font-family:Arial;padding:20px">
       <h2>Life Gain Herbal Products</h2>
       <p>Hello ${userName || "User"},</p>
-      <h1>${otp}</h1>
+      <h1 style="letter-spacing:4px">${otp}</h1>
       <p>This OTP is valid for 10 minutes.</p>
     </div>
   `;
 
   return transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to,
     subject,
     html,

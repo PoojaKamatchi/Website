@@ -30,17 +30,23 @@ const app = express();
 const server = http.createServer(app);
 
 /* ================= CORS ================= */
-app.use(cors({ origin: true, credentials: true }));
+// Allow frontend domain (replace with your frontend URL)
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://lifegain-in.onrender.com";
+
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true, // Allow cookies/auth headers
+  })
+);
 
 /* ================= Middleware ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-/* ================= Static ================= */
+/* ================= Static Uploads ================= */
 const __dirname = path.resolve();
-
-// uploaded images
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* ================= API Routes ================= */
@@ -59,19 +65,19 @@ app.use("/api/auth/admin/category", adminCategoryRoutes);
 
 /* ================= FRONTEND SERVE ================= */
 const frontendPath = path.join(__dirname, "frontend", "dist");
-
 app.use(express.static(frontendPath));
 
-/* ✅ FIXED REACT ROUTER RELOAD */
-app.use((req, res) => {
+// Fix React Router reload
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-/* ================= Errors ================= */
+/* ================= Error Handling ================= */
 app.use(notFound);
 app.use(errorHandler);
 
-/* ================= Server ================= */
+/* ================= Start Server ================= */
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
