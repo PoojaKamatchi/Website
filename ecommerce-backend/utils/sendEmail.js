@@ -1,32 +1,41 @@
 import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 const sendEmail = async ({ to, subject, otp, userName }) => {
-  const html = `
-    <div style="font-family:Arial;padding:20px">
-      <h2>Life Gain Herbal Products</h2>
-      <p>Hello ${userName || "User"},</p>
-      <h1 style="letter-spacing:4px">${otp}</h1>
-      <p>This OTP is valid for 10 minutes.</p>
-    </div>
-  `;
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error("Email credentials not set in environment variables");
+    }
 
-  return transporter.sendMail({
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-    to,
-    subject,
-    html,
-  });
+    const transporter = nodemailer.createTransport({
+      service: "gmail", // or any SMTP service
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Life Gain" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; text-align:center; padding:20px;">
+          <h2>Hello ${userName},</h2>
+          <p>Your OTP is:</p>
+          <h1 style="color:#007BFF;">${otp}</h1>
+          <p>It will expire in 10 minutes.</p>
+          <hr/>
+          <p>Life Gain Team</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ OTP sent to ${to}`);
+  } catch (err) {
+    console.error("❌ Email sending error:", err.message);
+    throw err; // throw so controller can catch it
+  }
 };
 
 export default sendEmail;
