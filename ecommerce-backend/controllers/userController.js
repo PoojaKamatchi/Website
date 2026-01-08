@@ -15,22 +15,26 @@ export const registerUser = async (req, res) => {
     const email = req.body.email?.toLowerCase().trim();
     const password = req.body.password;
 
-    if (!name || !email || !password)
+    if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields required" });
+    }
 
     let user = await User.findOne({ email });
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     if (user) {
-      if (user.isVerified)
-        return res.status(400).json({ message: "Email already exists" });
+      // ❌ already verified user
+      if (user.isVerified) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
 
-      // Resend OTP for unverified user
+      // 🔁 resend OTP for unverified user
       user.registerOtp = otp;
       user.registerOtpExpire = Date.now() + 10 * 60 * 1000;
       await user.save();
     } else {
-      user = await User.create({
+      // ✅ create new user
+      user = new User({
         name,
         email,
         password,
@@ -38,17 +42,26 @@ export const registerUser = async (req, res) => {
         registerOtpExpire: Date.now() + 10 * 60 * 1000,
         isVerified: false,
       });
+
+      await user.save();
     }
 
-    // 🔥 Send OTP
-    await sendEmail({
+    // 📧 send OTP (do not break API if mail fails)
+    const emailSent = await sendEmail({
       to: email,
       subject: "Verify Your Account - Life Gain",
       otp,
       userName: user.name,
     });
 
-    res.json({ userId: user._id, message: "OTP sent successfully" });
+    if (!emailSent) {
+      console.log("⚠️ OTP email not sent, but user saved");
+    }
+
+    res.status(200).json({
+      userId: user._id,
+      message: "OTP sent successfully",
+    });
   } catch (err) {
     console.error("Register error:", err);
     res.status(500).json({ message: "Server error" });
@@ -60,22 +73,28 @@ export const verifyRegisterOtp = async (req, res) => {
   try {
     const { userId, otp } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(userId))
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
+    }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.registerOtp !== otp || Date.now() > user.registerOtpExpire)
+    if (
+      user.registerOtp !== otp ||
+      !user.registerOtpExpire ||
+      Date.now() > user.registerOtpExpire
+    ) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
 
     user.isVerified = true;
     user.registerOtp = null;
     user.registerOtpExpire = null;
     await user.save();
 
-    res.json({
-      message: "Registration verified",
+    res.status(200).json({
+      message: "Registration verified successfully",
       token: generateToken(user._id),
       user: { name: user.name, email: user.email },
     });
@@ -94,13 +113,16 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user.isVerified)
-      return res.status(401).json({ message: "Verify email first" });
+    if (!user.isVerified) {
+      return res.status(401).json({ message: "Please verify your email first" });
+    }
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ message: "Invalid credentials" });
+    if (!match) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-    res.json({
+    res.status(200).json({
       token: generateToken(user._id),
       user: { name: user.name, email: user.email },
     });
@@ -115,6 +137,7 @@ export const forgotPassword = async (req, res) => {
   try {
     const email = req.body.email?.toLowerCase().trim();
     const user = await User.findOne({ email });
+
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -129,7 +152,10 @@ export const forgotPassword = async (req, res) => {
       userName: user.name,
     });
 
-    res.json({ userId: user._id, message: "OTP sent successfully" });
+    res.status(200).json({
+      userId: user._id,
+      message: "OTP sent successfully",
+    });
   } catch (err) {
     console.error("Forgot password error:", err);
     res.status(500).json({ message: "Server error" });
@@ -140,13 +166,19 @@ export const forgotPassword = async (req, res) => {
 export const verifyOtp = async (req, res) => {
   try {
     const { userId, otp } = req.body;
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.resetOtp !== otp || Date.now() > user.resetOtpExpire)
+    if (
+      user.resetOtp !== otp ||
+      !user.resetOtpExpire ||
+      Date.now() > user.resetOtpExpire
+    ) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
 
-    res.json({ message: "OTP verified" });
+    res.status(200).json({ message: "OTP verified successfully" });
   } catch (err) {
     console.error("Verify reset OTP error:", err);
     res.status(500).json({ message: "Server error" });
@@ -157,11 +189,17 @@ export const verifyOtp = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { userId, otp, newPassword } = req.body;
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.resetOtp !== otp || Date.now() > user.resetOtpExpire)
+    if (
+      user.resetOtp !== otp ||
+      !user.resetOtpExpire ||
+      Date.now() > user.resetOtpExpire
+    ) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
@@ -170,7 +208,7 @@ export const resetPassword = async (req, res) => {
     user.resetOtpExpire = null;
     await user.save();
 
-    res.json({ message: "Password reset successful" });
+    res.status(200).json({ message: "Password reset successful" });
   } catch (err) {
     console.error("Reset password error:", err);
     res.status(500).json({ message: "Server error" });

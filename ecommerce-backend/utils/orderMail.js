@@ -1,16 +1,13 @@
-import nodemailer from "nodemailer";
+import SibApiV3Sdk from "sib-api-v3-sdk";
 
+/* ================= BREVO SETUP ================= */
+const client = SibApiV3Sdk.ApiClient.instance;
+client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
+
+/* ================= ORDER MAIL ================= */
 export const sendOrderNotification = async (order) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com", // Brevo SMTP server
-      port: 587,                     // TLS port (use 465 if secure: true)
-      secure: false,                 // false for 587
-      auth: {
-        user: process.env.EMAIL_USER, // MUST be 'apikey'
-        pass: process.env.EMAIL_PASS, // Brevo SMTP key
-      },
-    });
+    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
     const itemsHtml = order.orderItems
       .map(
@@ -19,27 +16,43 @@ export const sendOrderNotification = async (order) => {
       )
       .join("");
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: process.env.ADMIN_EMAIL,
+    await apiInstance.sendTransacEmail({
+      sender: {
+        email: process.env.EMAIL_FROM,
+        name: "Life Gain",
+      },
+      to: [
+        {
+          email: process.env.ADMIN_EMAIL,
+          name: "Admin",
+        },
+      ],
       subject: "🛒 New Order Received",
-      html: `
-        <h2>New Order Received</h2>
+      htmlContent: `
+        <h2>🛍️ New Order Received</h2>
         <p><b>Name:</b> ${order.name}</p>
         <p><b>Mobile:</b> ${order.mobile}</p>
         <p><b>Address:</b> ${order.shippingAddress}</p>
+
+        <h3>Order Items</h3>
         <ul>${itemsHtml}</ul>
-        <h3>Total: ₹${order.totalAmount}</h3>
+
+        <h3>Total Amount: ₹${order.totalAmount}</h3>
+
         ${
           order.paymentScreenshot
-            ? `<img src="${order.paymentScreenshot}" width="300"/>`
-            : ""
+            ? `<p><b>Payment Screenshot:</b></p>
+               <img src="${order.paymentScreenshot}" width="300"/>`
+            : "<p><b>Payment:</b> Cash on Delivery</p>"
         }
       `,
     });
 
-    console.log("✅ Admin email sent via Brevo");
-  } catch (err) {
-    console.error("❌ Admin email send failed:", err.message);
+    console.log("✅ Admin order email sent successfully");
+  } catch (error) {
+    console.error(
+      "❌ Admin order email failed:",
+      error.response?.text || error.message
+    );
   }
 };
