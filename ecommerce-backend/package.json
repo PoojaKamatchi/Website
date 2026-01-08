@@ -30,6 +30,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.11",
     "react-transliterate": "^1.1.9",
+    "sib-api-v3-sdk": "^8.5.0",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {

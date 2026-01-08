@@ -1,48 +1,25 @@
-import nodemailer from "nodemailer";
+import SibApiV3Sdk from "sib-api-v3-sdk";
+
+const client = SibApiV3Sdk.ApiClient.instance;
+client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
 
 const sendEmail = async ({ to, subject, otp, userName }) => {
   try {
-    // Check environment variables
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Email ENV missing — skipping email send");
-      return false;
-    }
-
-    // ✅ Create transporter for Brevo SMTP
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com", // Brevo SMTP server
-      port: 587,                     // TLS port
-      secure: false,                 // true if port 465
-      auth: {
-        user: process.env.EMAIL_USER, // MUST be 'apikey'
-        pass: process.env.EMAIL_PASS, // Brevo SMTP key
-      },
-    });
-
-    // Email content
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to,
+    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    await apiInstance.sendTransacEmail({
+      sender: { email: process.env.EMAIL_FROM, name: "Life Gain" },
+      to: [{ email: to, name: userName }],
       subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding:20px; text-align:center;">
-          <h2>Hello ${userName},</h2>
-          <p>Your OTP is:</p>
-          <h1 style="color:#2563eb;">${otp}</h1>
-          <p>This OTP is valid for 10 minutes.</p>
-          <hr />
-          <p>Life Gain Team</p>
-        </div>
-      `,
-    };
-
-    // Send email
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ OTP email sent to ${to}`);
+      htmlContent: `<h2>Hello ${userName},</h2>
+                    <p>Your OTP is:</p>
+                    <h1>${otp}</h1>
+                    <p>This OTP is valid for 10 minutes.</p>`
+    });
+    console.log(`✅ Email sent to ${to}`);
     return true;
   } catch (error) {
-    console.error("❌ Email send failed:", error.message);
-    return false; // Do not throw, API continues
+    console.error("❌ Email failed:", error.message);
+    return false;
   }
 };
 
