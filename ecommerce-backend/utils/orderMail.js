@@ -3,10 +3,12 @@ import nodemailer from "nodemailer";
 export const sendOrderNotification = async (order) => {
   try {
     const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE, // gmail
+      host: "smtp-relay.brevo.com", // Brevo SMTP server
+      port: 587,                     // TLS port (use 465 if secure: true)
+      secure: false,                 // false for 587
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.EMAIL_USER, // MUST be 'apikey'
+        pass: process.env.EMAIL_PASS, // Brevo SMTP key
       },
     });
 
@@ -18,7 +20,7 @@ export const sendOrderNotification = async (order) => {
       .join("");
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: process.env.ADMIN_EMAIL,
       subject: "🛒 New Order Received",
       html: `
@@ -36,8 +38,8 @@ export const sendOrderNotification = async (order) => {
       `,
     });
 
-    console.log("✅ Admin email sent");
+    console.log("✅ Admin email sent via Brevo");
   } catch (err) {
-    console.error("❌ Email error:", err.message);
+    console.error("❌ Admin email send failed:", err.message);
   }
 };

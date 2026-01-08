@@ -8,16 +8,15 @@ const sendEmail = async ({ to, subject, otp, userName }) => {
       return false;
     }
 
-    // Create transporter
+    // ✅ Create transporter for Brevo SMTP
     const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || "gmail", // default to gmail
+      host: "smtp-relay.brevo.com", // Brevo SMTP server
+      port: 587,                     // TLS port
+      secure: false,                 // true if port 465
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // App Password
+        user: process.env.EMAIL_USER, // MUST be 'apikey'
+        pass: process.env.EMAIL_PASS, // Brevo SMTP key
       },
-      connectionTimeout: 10000, // 10s
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
     });
 
     // Email content
@@ -43,7 +42,7 @@ const sendEmail = async ({ to, subject, otp, userName }) => {
     return true;
   } catch (error) {
     console.error("❌ Email send failed:", error.message);
-    return false; // Do not throw, allow API to continue
+    return false; // Do not throw, API continues
   }
 };
 
