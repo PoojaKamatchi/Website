@@ -1,47 +1,35 @@
-import SibApiV3Sdk from "sib-api-v3-sdk";
-
-const client = SibApiV3Sdk.ApiClient.instance;
-client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
+import nodemailer from "nodemailer";
 
 const sendEmail = async ({ to, subject, otp, userName }) => {
   try {
-    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-
-    await apiInstance.sendTransacEmail({
-      sender: {
-        email: process.env.EMAIL_FROM,
-        name: "Life Gain",
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
-      to: [
-        {
-          email: to,
-          name: userName,
-        },
-      ],
-      subject: subject,
+    });
 
-      // 🔥 THIS IS THE FIX
-      htmlContent: `
-        <html>
-          <body>
-            <h2>Hello ${userName}</h2>
-            <p>Your OTP is:</p>
-            <h1 style="color:#2563eb;">${otp}</h1>
-            <p>This OTP is valid for 10 minutes.</p>
-            <br/>
-            <p>— Life Gain Team</p>
-          </body>
-        </html>
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to,
+      subject,
+      html: `
+        <div style="font-family:Arial;padding:20px">
+          <h2>Hello ${userName},</h2>
+          <p>Your OTP is:</p>
+          <h1 style="color:#2563eb">${otp}</h1>
+          <p>This OTP is valid for 10 minutes.</p>
+          <br/>
+          <b>Life Gain Team</b>
+        </div>
       `,
     });
 
-    console.log("✅ OTP email sent successfully");
+    console.log("✅ OTP email sent to", to);
     return true;
-  } catch (error) {
-    console.error(
-      "❌ Email failed:",
-      error.response?.body || error.message
-    );
+  } catch (err) {
+    console.error("❌ Email failed:", err.message);
     return false;
   }
 };

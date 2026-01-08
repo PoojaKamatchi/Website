@@ -1,58 +1,37 @@
-import SibApiV3Sdk from "sib-api-v3-sdk";
+import nodemailer from "nodemailer";
 
-/* ================= BREVO SETUP ================= */
-const client = SibApiV3Sdk.ApiClient.instance;
-client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
-
-/* ================= ORDER MAIL ================= */
 export const sendOrderNotification = async (order) => {
   try {
-    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-    const itemsHtml = order.orderItems
+    const items = order.orderItems
       .map(
-        (item) =>
-          `<li>${item.name} × ${item.quantity} — ₹${item.price}</li>`
+        (i) => `<li>${i.name} × ${i.quantity} — ₹${i.price}</li>`
       )
       .join("");
 
-    await apiInstance.sendTransacEmail({
-      sender: {
-        email: process.env.EMAIL_FROM,
-        name: "Life Gain",
-      },
-      to: [
-        {
-          email: process.env.ADMIN_EMAIL,
-          name: "Admin",
-        },
-      ],
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: process.env.ADMIN_EMAIL,
       subject: "🛒 New Order Received",
-      htmlContent: `
-        <h2>🛍️ New Order Received</h2>
+      html: `
+        <h2>New Order</h2>
         <p><b>Name:</b> ${order.name}</p>
         <p><b>Mobile:</b> ${order.mobile}</p>
         <p><b>Address:</b> ${order.shippingAddress}</p>
-
-        <h3>Order Items</h3>
-        <ul>${itemsHtml}</ul>
-
-        <h3>Total Amount: ₹${order.totalAmount}</h3>
-
-        ${
-          order.paymentScreenshot
-            ? `<p><b>Payment Screenshot:</b></p>
-               <img src="${order.paymentScreenshot}" width="300"/>`
-            : "<p><b>Payment:</b> Cash on Delivery</p>"
-        }
+        <ul>${items}</ul>
+        <h3>Total: ₹${order.totalAmount}</h3>
       `,
     });
 
-    console.log("✅ Admin order email sent successfully");
-  } catch (error) {
-    console.error(
-      "❌ Admin order email failed:",
-      error.response?.text || error.message
-    );
+    console.log("✅ Admin order email sent");
+  } catch (err) {
+    console.error("❌ Order email failed:", err.message);
   }
 };
