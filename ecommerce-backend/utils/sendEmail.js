@@ -1,42 +1,32 @@
 import nodemailer from "nodemailer";
-import { google } from "googleapis";
-
-const OAuth2 = google.auth.OAuth2;
-
-const createTransporter = async () => {
-  const oauth2Client = new OAuth2(
-    process.env.CLIENT_ID,
-    process.env.CLIENT_SECRET,
-    "https://developers.google.com/oauthplayground"
-  );
-
-  oauth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
-
-  const accessToken = await oauth2Client.getAccessToken();
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      type: "OAuth2",
-      user: process.env.EMAIL_USER,
-      clientId: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      refreshToken: process.env.REFRESH_TOKEN,
-      accessToken: accessToken.token,
-    },
-  });
-};
 
 const sendEmail = async ({ to, subject, otp, userName }) => {
   try {
-    const transporter = await createTransporter();
+    // Check environment variables
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log("⚠️ Email ENV missing — skipping email send");
+      return false;
+    }
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || "gmail", // default to gmail
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // App Password
+      },
+      connectionTimeout: 10000, // 10s
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+    });
+
+    // Email content
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to,
       subject,
       html: `
-        <div style="font-family: Arial; padding:20px;">
+        <div style="font-family: Arial, sans-serif; padding:20px; text-align:center;">
           <h2>Hello ${userName},</h2>
           <p>Your OTP is:</p>
           <h1 style="color:#2563eb;">${otp}</h1>
@@ -45,13 +35,15 @@ const sendEmail = async ({ to, subject, otp, userName }) => {
           <p>Life Gain Team</p>
         </div>
       `,
-    });
+    };
 
-    console.log("✅ Email sent to", to);
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ OTP email sent to ${to}`);
     return true;
-  } catch (err) {
-    console.error("❌ Email sending failed:", err.message);
-    return false;
+  } catch (error) {
+    console.error("❌ Email send failed:", error.message);
+    return false; // Do not throw, allow API to continue
   }
 };
 
