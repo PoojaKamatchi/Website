@@ -26,8 +26,9 @@ export default function Users() {
         return navigate("/admin/login"); // ✅ React Router redirect
       }
 
-      const res = await axios.get(`${API_URL}/api/auth/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` }, // ✅ Correct API path
+      // ✅ Correct API path
+      const res = await axios.get(`${API_URL}/api/auth/users`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       setUsers(res.data || []);
