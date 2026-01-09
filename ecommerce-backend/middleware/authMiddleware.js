@@ -4,13 +4,12 @@ import Admin from "../models/adminModel.js";
 
 /* ===================== USER PROTECT ===================== */
 export const protect = async (req, res, next) => {
-  let token;
   try {
     if (
       req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
+      req.headers.authorization.startsWith("Bearer ")
     ) {
-      token = req.headers.authorization.split(" ")[1];
+      const token = req.headers.authorization.split(" ")[1];
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -22,29 +21,24 @@ export const protect = async (req, res, next) => {
       }
 
       req.user = user;
-      next();
-    } else {
-      return res.status(401).json({ message: "Not authorized, no token" });
+      return next();
     }
+
+    return res.status(401).json({ message: "Not authorized, no token" });
   } catch (error) {
     console.error("User Auth Error:", error.message);
-    res.status(401).json({ message: "Not authorized, token failed" });
+    return res.status(401).json({ message: "Not authorized, token failed" });
   }
 };
 
-
-
 /* ===================== ADMIN PROTECT ===================== */
-
-// ✅ Admin authentication middleware
 export const adminProtect = async (req, res, next) => {
-  let token;
   try {
     if (
       req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
+      req.headers.authorization.startsWith("Bearer ")
     ) {
-      token = req.headers.authorization.split(" ")[1];
+      const token = req.headers.authorization.split(" ")[1];
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -54,22 +48,30 @@ export const adminProtect = async (req, res, next) => {
       }
 
       req.admin = admin;
-      next();
-    } else {
-      return res.status(401).json({ message: "Not authorized, no token" });
+      return next();
     }
+
+    return res.status(401).json({ message: "Not authorized, no token" });
   } catch (error) {
     console.error("Admin Auth Error:", error.message);
     return res.status(401).json({ message: "Not authorized, token failed" });
   }
 };
 
-
-/* ===================== OPTIONAL: ROLE CHECK ===================== */
-// Use in routes if you want to allow only admin
+/* ===================== ROLE CHECK ===================== */
+// Safe even if role does not exist
 export const authorizeRoles = (...roles) => (req, res, next) => {
-  if (roles.includes(req.admin?.role)) {
+  if (!req.admin) {
+    return res.status(401).json({ message: "Admin not authenticated" });
+  }
+
+  if (!req.admin.role) {
+    return res.status(403).json({ message: "Role not assigned" });
+  }
+
+  if (roles.includes(req.admin.role)) {
     return next();
   }
+
   return res.status(403).json({ message: "Forbidden: insufficient role" });
 };

@@ -22,7 +22,7 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password,
-      isVerified: true, // 🔥 directly verified
+      isVerified: true,
     });
 
     await user.save();
@@ -86,9 +86,9 @@ export const resetPassword = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
+    // ✅ ONLY THIS CHANGE — NO MANUAL HASH
+    user.password = newPassword;
+    await user.save(); // pre-save will hash
 
     res.status(200).json({ message: "Password reset successful" });
   } catch (err) {
