@@ -11,6 +11,7 @@ export default function OfferForm({ onSuccess }) {
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
 
+  // Preview image when file or URL changes
   useEffect(() => {
     if (imageFile) setPreview(URL.createObjectURL(imageFile));
     else if (imageUrl) setPreview(imageUrl);
@@ -19,20 +20,31 @@ export default function OfferForm({ onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!title || !discount) {
+      alert("Title and discount are required!");
+      return;
+    }
+
     const data = new FormData();
     data.append("title", title);
     data.append("description", description);
-    data.append("discount", discount);
-    if (imageFile) data.append("image", imageFile);
+    data.append("discount", Number(discount)); // convert to number
+    if (imageFile) data.append("imageFile", imageFile); // matches multer
     else if (imageUrl) data.append("image", imageUrl);
 
-    await axios.post(`${API_URL}/api/offers`, data);
-    onSuccess();
-    setTitle("");
-    setDescription("");
-    setDiscount("");
-    setImageUrl("");
-    setImageFile(null);
+    try {
+      await axios.post(`${API_URL}/api/offers`, data);
+      onSuccess(); // refresh offers
+      // reset form
+      setTitle("");
+      setDescription("");
+      setDiscount("");
+      setImageUrl("");
+      setImageFile(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add offer");
+    }
   };
 
   return (
@@ -45,12 +57,15 @@ export default function OfferForm({ onSuccess }) {
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Offer title"
         className="border p-2 w-full mb-3"
+        required
       />
       <input
         value={discount}
         onChange={(e) => setDiscount(e.target.value)}
         placeholder="Discount %"
         className="border p-2 w-full mb-3"
+        type="number"
+        required
       />
       <input
         value={imageUrl}
@@ -58,9 +73,16 @@ export default function OfferForm({ onSuccess }) {
         placeholder="Image URL"
         className="border p-2 w-full mb-3"
       />
-      <input type="file" onChange={(e) => setImageFile(e.target.files[0])} />
+      <input
+        type="file"
+        onChange={(e) => setImageFile(e.target.files[0])}
+      />
       {preview && (
-        <img src={preview} className="h-40 mx-auto mt-3 rounded" />
+        <img
+          src={preview}
+          alt="preview"
+          className="h-40 mx-auto mt-3 rounded object-cover"
+        />
       )}
       <button className="bg-blue-600 text-white w-full py-2 mt-4 rounded">
         Add Offer
