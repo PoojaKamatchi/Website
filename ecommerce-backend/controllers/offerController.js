@@ -1,11 +1,21 @@
 import Offer from "../models/offerModel.js";
 
-// Create new offer
+// Create new offer (with imageFile or image URL)
 export const createOffer = async (req, res) => {
   try {
-    const offer = await Offer.create(req.body);
+    const image = req.file ? `/uploads/${req.file.filename}` : req.body.image || "";
+
+    const offer = await Offer.create({
+      title: req.body.title,
+      description: req.body.description,
+      discount: Number(req.body.discount),
+      image,
+      isActive: true,
+    });
+
     res.status(201).json(offer);
   } catch (error) {
+    console.error("Create Offer Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -33,9 +43,7 @@ export const getActiveOffers = async (req, res) => {
 // Update offer
 export const updateOffer = async (req, res) => {
   try {
-    const offer = await Offer.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
+    const offer = await Offer.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(offer);
   } catch (error) {
     res.status(500).json({ message: error.message });

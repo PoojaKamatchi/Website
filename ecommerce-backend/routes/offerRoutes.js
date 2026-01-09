@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// 🟢 Admin: Create Offer
+// 🟢 Create Offer (file or URL)
 router.post("/", upload.single("imageFile"), async (req, res) => {
   try {
     const image = req.file ? `/uploads/${req.file.filename}` : req.body.image || "";
@@ -23,7 +23,7 @@ router.post("/", upload.single("imageFile"), async (req, res) => {
     const offer = await Offer.create({
       title: req.body.title,
       description: req.body.description,
-      discount: req.body.discount,
+      discount: Number(req.body.discount),
       image,
       isActive: true,
     });
@@ -35,7 +35,7 @@ router.post("/", upload.single("imageFile"), async (req, res) => {
   }
 });
 
-// 🟢 Admin: Get all offers
+// 🟢 Get all offers
 router.get("/", async (req, res) => {
   try {
     const offers = await Offer.find().sort({ createdAt: -1 });
@@ -45,7 +45,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 🟢 Customer: Active offers
+// 🟢 Get active offers (for customers)
 router.get("/active/list", async (req, res) => {
   try {
     const offers = await Offer.find({ isActive: true }).sort({ createdAt: -1 });
@@ -55,16 +55,7 @@ router.get("/active/list", async (req, res) => {
   }
 });
 
-// 🟢 Update & Delete
-router.put("/:id", async (req, res) => {
-  try {
-    const offer = await Offer.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(offer);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
+// 🟢 Delete offer
 router.delete("/:id", async (req, res) => {
   try {
     await Offer.findByIdAndDelete(req.params.id);

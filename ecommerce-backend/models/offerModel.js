@@ -4,8 +4,8 @@ const offerSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     description: { type: String },
-    discount: { type: Number, required: true }, // % or fixed amount
-    image: { type: String }, // optional banner image
+    discount: { type: Number, required: true },
+    image: { type: String }, // URL or uploaded file
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
