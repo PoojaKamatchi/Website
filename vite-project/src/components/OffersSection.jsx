@@ -44,10 +44,12 @@ export default function OffersSection() {
   return (
     <section className="py-14">
       {/* 🌈 SECTION BORDER HIGHLIGHT */}
-      <div className="max-w-7xl mx-auto px-4 rounded-3xl
-                      border-4 border-transparent
-                      bg-gradient-to-r from-green-400 via-teal-400 to-blue-400
-                      p-[3px]">
+      <div
+        className="max-w-7xl mx-auto px-4 rounded-3xl
+                   border-4 border-transparent
+                   bg-gradient-to-r from-green-400 via-teal-400 to-blue-400
+                   p-[3px]"
+      >
         <div className="bg-white rounded-3xl p-6 sm:p-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 text-gray-800">
             🩺 Special Medical Offers
@@ -60,8 +62,7 @@ export default function OffersSection() {
                 ? offer.image
                 : `${API_URL}${offer.image}`;
 
-              const productId =
-                offer.product?._id || offer.productId;
+              const productId = offer.product?._id || offer.productId;
 
               return (
                 <div
@@ -72,14 +73,15 @@ export default function OffersSection() {
                   }}
                 >
                   {/* 🌟 ANIMATED BORDER */}
-                  <div className="absolute inset-0 rounded-2xl
-                                  bg-gradient-to-r from-green-400 via-teal-400 to-blue-400
-                                  opacity-60 blur-sm" />
+                  <div
+                    className="absolute inset-0 rounded-2xl
+                               bg-gradient-to-r from-green-400 via-teal-400 to-blue-400
+                               opacity-60 blur-sm"
+                  />
 
                   {/* CARD BODY */}
                   <div className="relative bg-white rounded-2xl overflow-hidden shadow-lg">
                     <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-
                       {/* ✅ CLICK ONLY IMAGE */}
                       {imageSrc ? (
                         <img
@@ -94,28 +96,50 @@ export default function OffersSection() {
                                      transition-transform duration-300"
                         />
                       ) : (
-                        <div className="w-full h-36 sm:h-48 bg-gray-200
-                                        flex items-center justify-center
-                                        rounded-xl text-gray-400 text-sm">
+                        <div
+                          className="w-full h-36 sm:h-48 bg-gray-200
+                                     flex items-center justify-center
+                                     rounded-xl text-gray-400 text-sm"
+                        >
                           No Image
                         </div>
                       )}
 
-                      <h3 className="text-lg sm:text-xl font-semibold truncate">
+                      {/* TITLE (up to 2 lines) */}
+                      <h3
+                        className="text-lg sm:text-xl font-semibold"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
                         {offer.title}
                       </h3>
 
-                      <p className="text-gray-600 text-sm sm:text-base truncate">
+                      {/* DESCRIPTION (up to 3 lines) */}
+                      <p
+                        className="text-gray-600 text-sm sm:text-base"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
                         {offer.description}
                       </p>
 
-                      <span className="inline-block px-3 py-1
-                                       text-xs sm:text-sm
-                                       bg-green-600 text-white
-                                       rounded-full font-medium">
+                      {/* DISCOUNT */}
+                      <span
+                        className="inline-block px-3 py-1
+                                   text-xs sm:text-sm
+                                   bg-green-600 text-white
+                                   rounded-full font-medium"
+                      >
                         {offer.discount}% OFF
                       </span>
-
                     </div>
                   </div>
                 </div>
@@ -128,12 +152,8 @@ export default function OffersSection() {
       {/* ✨ BORDER ANIMATION */}
       <style>{`
         @keyframes borderGlow {
-          0%, 100% {
-            opacity: 0.35;
-          }
-          50% {
-            opacity: 0.85;
-          }
+          0%, 100% { opacity: 0.35; }
+          50% { opacity: 0.85; }
         }
 
         .animate-borderGlow::before {
