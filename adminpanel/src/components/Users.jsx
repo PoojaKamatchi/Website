@@ -19,7 +19,7 @@ export default function Users() {
   const fetchUsers = async () => {
     if (!token) {
       toast.error("❌ Admin login required");
-      window.location.href = "/login";
+      window.location.href = "/admin/login"; // ✅ FIX
       return;
     }
 
@@ -31,7 +31,7 @@ export default function Users() {
     } catch (err) {
       toast.error("Session expired. Please login again.");
       localStorage.removeItem("adminToken");
-      window.location.href = "/login";
+      window.location.href = "/admin/login"; // ✅ FIX
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export default function Users() {
         👥 Users List
       </h1>
 
-      {/* ================= MOBILE VIEW (CARDS) ================= */}
+      {/* MOBILE VIEW */}
       <div className="grid grid-cols-1 gap-6 sm:hidden">
         {users.map((u) => (
           <motion.div
@@ -89,7 +89,7 @@ export default function Users() {
         ))}
       </div>
 
-      {/* ================= DESKTOP VIEW (TABLE) ================= */}
+      {/* DESKTOP VIEW */}
       <div className="hidden sm:block bg-white rounded-2xl shadow overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-indigo-600 text-white">
@@ -104,17 +104,12 @@ export default function Users() {
           </thead>
           <tbody>
             {users.map((u, idx) => (
-              <motion.tr
-                key={u._id}
-                className="border-b hover:bg-gray-50"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
+              <motion.tr key={u._id} className="border-b hover:bg-gray-50">
                 <td className="py-3 px-4">{idx + 1}</td>
                 <td className="py-3 px-4">
                   <img
                     src={u.profilePic || "https://via.placeholder.com/40"}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full"
                   />
                 </td>
                 <td className="py-3 px-4">{u.name}</td>
@@ -136,37 +131,6 @@ export default function Users() {
           </tbody>
         </table>
       </div>
-
-      {/* ================= MODAL ================= */}
-      {modalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative"
-          >
-            <button
-              onClick={() => setModalOpen(false)}
-              className="absolute top-3 right-3 text-xl font-bold"
-            >
-              ×
-            </button>
-
-            <div className="flex flex-col items-center gap-3">
-              <img
-                src={selectedUser.profilePic || "https://via.placeholder.com/80"}
-                className="w-20 h-20 rounded-full"
-              />
-              <h2 className="text-xl font-bold text-indigo-700">{selectedUser.name}</h2>
-              <p className="text-gray-700">{selectedUser.email}</p>
-              <p className="capitalize text-gray-700">
-                Role: {selectedUser.role || "Customer"}
-              </p>
-              <p className="text-gray-700">Phone: {selectedUser.phone || "N/A"}</p>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }
