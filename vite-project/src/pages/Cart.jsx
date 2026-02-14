@@ -86,7 +86,7 @@ export default function Cart() {
           <hr className="my-3" />
           <p className="flex justify-between font-bold text-lg text-indigo-700">
             <span>Total:</span>
-            <span>₹ {totalPrice + 40}</span>
+            
           </p>
           <button
             onClick={handleProceedToCheckout}

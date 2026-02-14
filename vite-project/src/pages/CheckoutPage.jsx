@@ -151,7 +151,8 @@ export default function CheckoutPage() {
 
           <p className="font-medium mb-2">UPI Payment</p>
           <QRCodeSVG
-            value={`upi://pay?pa=poojamuralipooja248@oksbi&pn=Pooja&am=${finalAmount}&cu=INR`}
+           value={`upi://pay?pa=kevatesting.com@okhdfcbank&pn=Pooja&am=${finalAmount}&cu=INR`}
+
             size={180}
           />
 
