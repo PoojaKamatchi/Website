@@ -1,9 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { CartProvider } from "./components/CartContext.jsx";
 import { WishlistProvider } from "./components/WishlistContext.jsx";
 
 // Components
-import Layout from "./components/Navbar.jsx"; // <-- updated Layout
+import Layout from "./components/Navbar.jsx";
 import Home from "./pages/Home.jsx";
 import Cart from "./pages/Cart.jsx";
 import CategoryPage from "./pages/CategoryPage.jsx";
@@ -25,11 +26,28 @@ import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 import SearchResults from "./pages/SearchResults.jsx";
 import ContactPage from "./pages/Contact.jsx";
 
+
+// ✅ Backend Wake-Up Component
+function BackendWarmup() {
+  useEffect(() => {
+    fetch("https://website-rkrl.onrender.com/")
+      .then(() => console.log("✅ Backend Woke Up"))
+      .catch(() => console.log("❌ Backend Wake Failed"));
+  }, []);
+
+  return null;
+}
+
+
 export default function App() {
   return (
     <CartProvider>
       <WishlistProvider>
         <Router>
+
+          {/* ✅ Wake backend when app loads */}
+          <BackendWarmup />
+
           <Layout>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -54,6 +72,7 @@ export default function App() {
               <Route path="/contact" element={<ContactPage />} />
             </Routes>
           </Layout>
+
         </Router>
       </WishlistProvider>
     </CartProvider>
