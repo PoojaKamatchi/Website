@@ -13,7 +13,7 @@ import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js"; // ✅ NEW
+import profileRoutes from "./routes/profileRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
@@ -24,7 +24,6 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import offerRoutes from "./routes/offerRoutes.js";
 
-
 // ================= CONFIG =================
 dotenv.config();
 connectDB();
@@ -32,10 +31,9 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-
 // ================= CORS =================
 
-// Allow frontend, admin, and localhost
+// Only deployed frontend + admin
 const FRONTEND_URL =
   process.env.FRONTEND_URL || "https://lifegain-in.onrender.com";
 
@@ -47,15 +45,9 @@ const allowedOrigins = [FRONTEND_URL, ADMIN_URL];
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow Postman / mobile apps
-      if (!origin) return callback(null, true);
+      if (!origin) return callback(null, true); // allow server-to-server / Postman
 
-      // Allow deployed domains + localhost
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.startsWith("http://localhost") ||
-        origin.startsWith("http://127.0.0.1")
-      ) {
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
@@ -68,17 +60,14 @@ app.use(
   })
 );
 
-
 // ================= MIDDLEWARE =================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-
 // ================= STATIC UPLOADS =================
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
 
 // ================= API ROUTES =================
 
@@ -88,7 +77,7 @@ app.use("/api/auth", adminRoutes);
 
 // Users
 app.use("/api/users", userRoutes);
-app.use("/api/users", profileRoutes);   // ✅ PROFILE ROUTES ADDED
+app.use("/api/users", profileRoutes);
 
 // Ecommerce
 app.use("/api/products", productRoutes);
@@ -105,7 +94,6 @@ app.use("/api", contactRoutes);
 app.use("/api/auth/admin/products", adminProductRoutes);
 app.use("/api/auth/admin/category", adminCategoryRoutes);
 
-
 // ================= FRONTEND SERVE =================
 const frontendPath = path.join(__dirname, "frontend", "dist");
 app.use(express.static(frontendPath));
@@ -116,11 +104,9 @@ app.use((req, res, next) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-
 // ================= ERROR HANDLING =================
 app.use(notFound);
 app.use(errorHandler);
-
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
