@@ -30,7 +30,7 @@ import ContactPage from "./pages/Contact.jsx";
 // ✅ Backend Wake-Up Component
 function BackendWarmup() {
   useEffect(() => {
-    fetch("https://website-rkrl.onrender.com/")
+    fetch("https://backend-n3pb.onrender.com/")
       .then(() => console.log("✅ Backend Woke Up"))
       .catch(() => console.log("❌ Backend Wake Failed"));
   }, []);
