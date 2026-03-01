@@ -33,7 +33,6 @@ const server = http.createServer(app);
 
 // ================= CORS =================
 
-// Only deployed frontend + admin
 const FRONTEND_URL =
   process.env.FRONTEND_URL || "https://lifegain-in.onrender.com";
 
@@ -45,7 +44,7 @@ const allowedOrigins = [FRONTEND_URL, ADMIN_URL];
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow server-to-server / Postman
+      if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
@@ -94,13 +93,24 @@ app.use("/api", contactRoutes);
 app.use("/api/auth/admin/products", adminProductRoutes);
 app.use("/api/auth/admin/category", adminCategoryRoutes);
 
+// ================= HEALTH CHECK =================
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // ================= FRONTEND SERVE =================
 const frontendPath = path.join(__dirname, "frontend", "dist");
 app.use(express.static(frontendPath));
 
 // React Router Fix
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api")) return next();
+  if (
+    req.path.startsWith("/api") ||
+    req.path.startsWith("/uploads") ||
+    req.path === "/health"
+  ) {
+    return next();
+  }
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
